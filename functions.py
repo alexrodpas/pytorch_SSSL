@@ -52,21 +52,21 @@ def phi(unlabled_X, labled_X, unlabled_Y, labled_Y, W_t, eita_t):
     return W
 
 # Calculates the combined trace value of the given data, L_G, H and W
-def value(labeled_X, unlabeled_X, unlabeled_Y, labeled_Y, L_G, H, W, Parameter):
+def value(labeled_X, unlabeled_X, unlabeled_Y, labeled_Y, L_G, H, W, parameters):
     # trace of Y_u*L_G*Y_u^T
-    part1 = 5000000 * np.trace(np.dot(np.dot(unlabeled_Y, L_G), unlabeled_Y.T))
+    Part1 = 5000000 * np.trace(np.dot(np.dot(unlabeled_Y, L_G), unlabeled_Y.T))
 
     # trace of H^T*H
-    part2 = 0.5 * Parameter.lambda_1 * np.trace(np.dot(H.T, H))
+    Part2 = 0.5 * parameters['lambda_1'] * np.trace(np.dot(H.T, H))
 
     # trace of loss_u^T*loss_u, where loss_u is W^T*X_u-Y_u
-    part3 = 0.5 * Parameter.lambda_2 * np.trace(np.dot(np.dot((W.T, unlabeled_X) - unlabeled_Y).T, (W.T, unlabeled_X) - unlabeled_Y))
+    Part3 = 0.5 * parameters['lambda_2'] * np.trace(np.dot((np.dot(W.T, unlabeled_X) - unlabeled_Y).T, np.dot(W.T, unlabeled_X) - unlabeled_Y))
 
     # trace of W^T*W
-    part4 = 0.5 * Parameter.lambda_3 * np.trace(np.dot(W.T, W))
+    Part4 = 0.5 * parameters['lambda_3'] * np.trace(np.dot(W.T, W))
 
     # trace of loss_l^T*loss_l, where loss_l is W^T*X_l-Y_l
-    part5 = 0.5 * Parameter.lambda_4 * np.trace(np.dot(np.dot((W.T, labeled_X) - labeled_Y.T).T, (W.T, labeled_X) - labeled_Y.T))
+    Part5 = 0.5 * parameters['lambda_4'] * np.trace(np.dot((np.dot(W.T, labeled_X) - labeled_Y.T).T, np.dot(W.T, labeled_X) - labeled_Y.T))
 
     # Returns the weighted sum of the different trace values
-    return part1 + part2 + part3 + part4 + part5
+    return Part1 + Part2 + Part3 + Part4 + Part5

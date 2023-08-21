@@ -1,7 +1,7 @@
 import numpy as np
 
 # Calculates the S derivation of the given data, W, shapelets, ST, SS and additional variables and parameters
-def S_derivation(Y, X, W, ST_t, Shape_t, Xkj_skl, SSij_sil, SS, Parameter):
+def S_derivation(Y, X, W, ST_t, Shape_t, Xkj_skl, SSij_sil, SS, parameters):
     DShape_t = Shape_t[:, 1:]                   # extracts shapelets
     mST, nST = ST_t.shape                       # for looping through ST
     mDShape, nDShape = DShape_t.shape           # for looping through shapelets
@@ -12,8 +12,8 @@ def S_derivation(Y, X, W, ST_t, Shape_t, Xkj_skl, SSij_sil, SS, Parameter):
     Part3 = np.zeros((mDShape, nDShape))        # initializing matrix to record part 1 values
 
     parameter1 = 50000000 * np.dot(Y.T, Y)                      # parameter for weighted calculations
-    parameter2 = Parameter['lambda_1'] * SS                     # parameter for weighted calculations
-    parameter3 = Parameter['lambda_2'] * (np.dot(W.T, X) - Y)   # parameter for weighted calculations
+    parameter2 = parameters['lambda_1'] * SS                     # parameter for weighted calculations
+    parameter3 = parameters['lambda_2'] * (np.dot(W.T, X) - Y)   # parameter for weighted calculations
 
     STij_skl = np.zeros((mST, nST, mDShape, nDShape))   # for storing ST_(ij) derivatives with respect to S_(kl)
 
@@ -26,7 +26,7 @@ def S_derivation(Y, X, W, ST_t, Shape_t, Xkj_skl, SSij_sil, SS, Parameter):
             for i in range(mST):
                 for j in range(nST):
                     # Calculates ST_(ij) derivative with respect to S_(kl)
-                    STij_skl[i, j, k, l] = ST_t[i, j] * (-2/Parameter['sigma']**2) * (X[k, i] - X[k, j]) * (Xkj_skl[k, i, l] - Xkj_skl[k, j, l])
+                    STij_skl[i, j, k, l] = ST_t[i, j] * (-2/parameters['sigma']**2) * (X[k, i] - X[k, j]) * (Xkj_skl[k, i, l] - Xkj_skl[k, j, l])
             for i in range(mST):
                 for j in range(nST):
                     if j == i:
@@ -44,7 +44,7 @@ def S_derivation(Y, X, W, ST_t, Shape_t, Xkj_skl, SSij_sil, SS, Parameter):
     return Part1 + Part2 + Part3
 
 # Calculates the SS derivation of the given data, W, shapelets at time t, SS, ST and additional variables and parameters
-def SS_derivation(unlabeled_Y, labeled_Y, unlabeled_X, labeled_X, W, ST_t, unlabeled_Shape_t, labeled_Shape_t, unlabeled_Xkj_skl, labeled_Xkj_sk1, unSSij_sil, SS, Parameter):
+def SS_derivation(unlabeled_Y, labeled_Y, unlabeled_X, labeled_X, W, ST_t, unlabeled_Shape_t, labeled_Shape_t, unlabeled_Xkj_skl, labeled_Xkj_sk1, unSSij_sil, SS, parameters):
     DShape_t = unlabeled_Shape_t[:, 1:]         # extracts unlabeled shapelets
     mST, nST = ST_t.shape                       # for looping through ST
     mDShape, nDShape = DShape_t.shape           # for looping through shapelets
@@ -57,9 +57,9 @@ def SS_derivation(unlabeled_Y, labeled_Y, unlabeled_X, labeled_X, W, ST_t, unlab
     Part4 = np.zeros((mDShape, nDShape))        # initializing matrix to record part 4 values
 
     parameter1 = 1/2 * np.dot(unlabeled_Y.T, unlabeled_Y)                           # parameter for weighted calculations
-    parameter2 = Parameter['lambda_1'] * SS                                         # parameter for weighted calculations
-    parameter3 = Parameter['lambda_2'] * (np.dot(W.T, unlabeled_X) - unlabeled_Y)   # parameter for weighted calculations
-    parameter4 = Parameter['lambda_4'] * (np.dot(W.T, labeled_X) - labeled_Y.T)     # parameter for weighted calculations
+    parameter2 = parameters['lambda_1'] * SS                                         # parameter for weighted calculations
+    parameter3 = parameters['lambda_2'] * (np.dot(W.T, unlabeled_X) - unlabeled_Y)   # parameter for weighted calculations
+    parameter4 = parameters['lambda_4'] * (np.dot(W.T, labeled_X) - labeled_Y.T)     # parameter for weighted calculations
 
     STij_skl = np.zeros((mST, nST, mDShape, nDShape))   # for storing ST_(ij) derivatives with respect to S_(kl)
 
@@ -72,7 +72,7 @@ def SS_derivation(unlabeled_Y, labeled_Y, unlabeled_X, labeled_X, W, ST_t, unlab
             for i in range(mST):
                 for j in range(nST):
                     # Calculates ST_(ij) derivative with respect to S_(kl)
-                    STij_skl[i, j, k, l] = ST_t[i, j] * (-2/Parameter['sigma']**2) * (unlabeled_X[k, i] - unlabeled_X[k, j]) * (unlabeled_Xkj_skl[k, i, l] - unlabeled_Xkj_skl[k, j, l])
+                    STij_skl[i, j, k, l] = ST_t[i, j] * (-2/parameters['sigma']**2) * (unlabeled_X[k, i] - unlabeled_X[k, j]) * (unlabeled_Xkj_skl[k, i, l] - unlabeled_Xkj_skl[k, j, l])
             for i in range(mST):
                 for j in range(nST):
                     if j == i:
@@ -97,7 +97,7 @@ def SS_derivation(unlabeled_Y, labeled_Y, unlabeled_X, labeled_X, W, ST_t, unlab
     return Part1 + Part2 + Part3 + Part4
 
 # Calculates the lS derivation with the given X and Y, W, shapelets at time t, and additional variables and parameters
-def lS_derivation(Y, X, W, Shape_t, Xkj_sk1, SSij_sil, SS, Parameter):
+def lS_derivation(Y, X, W, Shape_t, Xkj_sk1, SSij_sil, SS, parameters):
     DShape_t = Shape_t[:, 1:]                   # extracts shapelets
     mDShape, nDShape = DShape_t.shape           # for looping through shapelets
     mY, nY = Y.shape                            # for looping through Y
@@ -105,8 +105,8 @@ def lS_derivation(Y, X, W, Shape_t, Xkj_sk1, SSij_sil, SS, Parameter):
     Part1 = np.zeros((mDShape, nDShape))        # initializing matrix to record part 1 values
     Part2 = np.zeros((mDShape, nDShape))        # initializing matrix to record part 2 values
 
-    parameter1 = Parameter['lambda_1'] * SS                         # parameter for weighted calculations
-    parameter2 = Parameter['lambda_4'] * (np.dot(W.T, X) - Y.T)     # parameter for weighted calculations
+    parameter1 = parameters['lambda_1'] * SS                         # parameter for weighted calculations
+    parameter2 = parameters['lambda_4'] * (np.dot(W.T, X) - Y.T)     # parameter for weighted calculations
 
     # Loops through shapelets and calculates Part 1 and Part 2
     for k in range(mDShape):
