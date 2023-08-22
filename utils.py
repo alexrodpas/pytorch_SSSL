@@ -101,6 +101,87 @@ def shapelet_similarity(S, alpha, sigma):
     # Returns similarity, distance and derivative matrices
     return H, XS, Hij_sil
 
+# Clusters the data into C centroids using the given epsilon
+def EM(Data, C, epsilon=0.1):
+    m, n = Data.shape                   # for looping through data
+    
+    # Initializes centroids
+    C_t = np.max(Data) * np.random.rand(m, C)   # random centroid initialization
+    C_tp1 = np.zeros((m, C))                    # update variable
+    v = 2 * epsilon                             # loop termination variable
+    
+    # Loops through the update script until the target value is reached
+    while v > epsilon:
+        Y = np.zeros((C, n))            # cluster assignment matrix
+        
+        # Calculates distances between data and centroids and assigns clusters
+        for i in range(n):
+            distance = np.zeros(C)      # for calculating data-centroid distances
+            
+            for j in range(C):
+                distance[j] = np.linalg.norm(Data[:, i] - C_t[:, j])    # calculates distance to each centroid
+            
+            # Assigns each data point to the centroid that has the smallest distance to it
+            index = np.argmin(distance)
+            Y[index, i] = 1
+        
+        # Calculates the optimal centroids based on the current clusters
+        for i in range(C):
+            # Failsafe for faulty cluster assignment
+            if len(np.where(Y[i, :] == 1)) == 0:
+                index = np.random.randint(n)
+            else:
+                index = np.where(Y[i, :] == 1)[0]
+            
+            # Calculates the mean of the data on the selected cluster
+            C_tp1[:, i] = np.mean(Data[:, index], axis=1)
+        
+        # Calculates the trace if the difference between the current centroids and optimal centroids
+        v = np.trace(np.dot((C_tp1 - C_t).T, C_tp1 - C_t))
+        C_t = C_tp1                     # updates centroids
+    
+    # Returns the calculated centroids and cluster assignments
+    return C_t, Y
+
+# Clusters the data into C centroids using the given epsilon
+def kmeans(Data, C, epsilon=0.001):
+    m, n = Data.shape                   # for looping through data
+    
+    # Initializes centroids
+    C_t = np.max(Data) * np.random.rand(m, C)   # random centroid initialization
+    C_tp1 = np.zeros((m, C))                    # update variable
+    v = 2 * epsilon                             # loop termination variable
+    
+    while v > epsilon:
+        # Cluster data based on current centroids
+        Y = np.zeros((C, n))            # cluster assignment matrix
+        for i in range(n):
+            distance = np.zeros(C)      # for calculating data-centroid distances
+            for j in range(C):
+                distance[j] = np.linalg.norm(Data[:, i] - C_t[:, j])    # calculates distance to each centroid
+            
+            # Assigns each data point to the centroid that has the smallest distance to it
+            index = np.argmin(distance)
+            Y[index, i] = 1
+        
+        # Calculates the optimal centroids based on the current clusters
+        for i in range(C):
+            # Failsafe for faulty cluster assignment
+            if len(np.where(Y[i, :] == 1)) == 0:
+                index = np.random.randint(n)
+            else:
+                index = np.where(Y[i, :] == 1)[0]
+            
+            # Calculates the mean of the data on the selected cluster
+            C_tp1[:, i] = np.mean(Data[:, index], axis=1)
+        
+        # Calculates the trace if the difference between the current centroids and optimal centroids
+        v = np.trace(np.dot((C_tp1 - C_t).T, C_tp1 - C_t))
+        C_t = C_tp1                     # updates centroids
+    
+    # Returns the calculated centroids and cluster assignments
+    return C_t, Y
+
 # Reshapes the Y_true matrix into a one-hot encoding
 def reshape_y_true(Y_true, C):
     Y_true[np.where(Y_true < 0)] = C-1      # corrects invalid values
@@ -131,3 +212,8 @@ def obtain_segment(T, length):
 
     # Returns a matrix where each row is a segment of T
     return np.array(segment_matrix)
+
+# Applies z-regularization to the given data
+def z_regularization(Data):
+    # Returns regularized data
+    return (Data - np.min(Data)) / (np.max(Data) - np.min(Data))
