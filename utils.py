@@ -182,6 +182,39 @@ def kmeans(Data, C, epsilon=0.001):
     # Returns the calculated centroids and cluster assignments
     return C_t, Y
 
+# Obtains a segment of T with a specific length
+def obtain_segment(T, length):
+    L = T[:, 0]                 # length column
+    DT = T[:, 1:]               # time series data
+    m, _ = DT.shape             # for looping through DT
+    segment_matrix = []         # for storing the segments
+
+    # Loops through L
+    for j in range(m):
+        len = L[j] - length + 1
+        # Loops through each possible segment in DT[j]
+        for k in range(len):
+            segment = DT[j, k:k + length]
+            segment_matrix.append(segment)  # records segment
+
+    # Returns a matrix where each row is a segment of T
+    return np.array(segment_matrix)
+
+def s_initialization(T, parameters):
+    S = np.zeros((parameters['k'] * parameters['R'], 1 + parameters['R'] * parameters['Lmin'])) # shapelets
+
+    # Creates k shapelets for each of R lengths and saves them to S
+    for j in range(parameters['R']):
+        length = (j + 1) * parameters['Lmin']       # shapelet length
+        segment_matrix = obtain_segment(T, length)  # time series segments
+        DS = np.dot(np.ones((parameters['k'], 1)), np.mean(segment_matrix, axis=0)) # initializes shapelets as mean time series values
+        # DS, _ = EM(segment_matrix.T, parameters['k'])
+        S[j * parameters['k']:(j + 1) * parameters['k'], 0] = length            # records shapelet length
+        S[j * parameters['k']:(j + 1) * parameters['k'], 1:length + 1] = DS     # saves shapelets
+    
+    # Returns the saved shapelets with their lengths
+    return S
+
 # Reshapes the Y_true matrix into a one-hot encoding
 def reshape_y_true(Y_true, C):
     Y_true[np.where(Y_true < 0)] = C-1      # corrects invalid values
@@ -194,24 +227,6 @@ def reshape_y_true(Y_true, C):
     
     # Returns one-hot encoding of Y_true
     return Y_true_matrix
-
-# Obtains a segment of T with a specific length
-def obtain_segment(T, length):
-    L = T[:, 0]                 # first column of T
-    DT = T[:, 1:]               # all but the first column of T
-    m, _ = DT.shape             # for looping through DT
-    segment_matrix = []         # for storing the segments
-
-    # Loops through :L
-    for j in range(m):
-        len = L[j] - length + 1
-        # Loops through each possible segment in DT[j]
-        for k in range(len):
-            segment = DT[j, k:k+length]
-            segment_matrix.append(segment)  # records segment
-
-    # Returns a matrix where each row is a segment of T
-    return np.array(segment_matrix)
 
 # Applies z-regularization to the given data
 def z_regularization(Data):
