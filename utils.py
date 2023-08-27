@@ -219,11 +219,11 @@ def s_initialization(T, parameters):
 def reshape_y_true(Y_true, C):
     Y_true[np.where(Y_true < 0)] = C-1      # corrects invalid values
     m = len(Y_true)                         # for looping through Y_true
-    Y_true_matrix = np.zeros((C, m))        # for storing one-hot encoding
+    Y_true_matrix = np.zeros((m, C))        # for storing one-hot encoding
 
     # Loops through Y_true values
-    for j in range(m):
-        Y_true_matrix[Y_true[j], j] = 1     # one-hot encoding of Y_true[j]
+    for i in range(m):
+        Y_true_matrix[i, Y_true[i]] = 1     # one-hot encoding of Y_true[i]
     
     # Returns one-hot encoding of Y_true
     return Y_true_matrix

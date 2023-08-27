@@ -1,13 +1,12 @@
 import pandas as pd
-import numpy as np
 from torch.utils.data import Dataset, DataLoader
 
 # Helper class for creating labeled time series dataset
 class LabeledTimeseriesDataset(Dataset):
     # Initializes the dataset for labeled time series
     def __init__(self, data, transform=None, target_transform=None):
-        self.timeseries = data.iloc[:, -1]              # time series data
-        self.labels = data.iloc[:, :len(data[0]) - 1]   # labels
+        self.timeseries = data.iloc[:, 1:]              # time series data
+        self.labels = data.iloc[:, 0]                   # labels
         self.transform = transform                      # time series transform
         self.target_transform = target_transform        # label transform
 
@@ -50,24 +49,26 @@ class UnlabeledTimeseriesDataset(Dataset):
         # Returns transformed time series
         return timeseries
 
+# Loads the data from the given file path and creates labeled and unlabeled
+# datasets based on the given label ratio and loaded in the given batch size
 def load_dataset(file_path, label_ratio, batch_size):
-    label_ratio = np.clip(label_ratio, 0.0, 1.0)                        # failsafe
+    label_ratio = max(min(label_ratio, 1.0), 0.0)       # failsafe
     
     # Loads data from csv file
     data = pd.read_csv(file_path)
 
     # Separates labeled and unlabeled data based on the given label ratio
     labeled_index = data.sample(frac=label_ratio, replace=False).index  # extracts labeled indices
-    labeled_data = data.iloc(labeled_index)                             # extracts labeled data
-    data.drop(index=labeled_index, columns=-1, inplace=True)            # removes labeled data
+    labeled_data = data.iloc(labeled_index)             # extracts labeled data
+    data.drop(index=labeled_index, columns=0, inplace=True)     # removes labeled data
 
     # Creates datasets based on the labeled and unlabeled data
-    labeled_dataset = LabeledTimeseriesDataset(labeled_data)
-    unlabeled_dataset = UnlabeledTimeseriesDataset(data)
+    # labeled_dataset = LabeledTimeseriesDataset(labeled_data)
+    # unlabeled_dataset = UnlabeledTimeseriesDataset(data)
 
     # Creates data loaders for the labeled and unlabeled datasets
-    labeled_dataloader = DataLoader(labeled_dataset, batch_size=batch_size, shuffle=True)
-    unlabeled_dataloader = DataLoader(unlabeled_dataset, batch_size=batch_size, shuffle=True)
+    # labeled_dataloader = DataLoader(labeled_dataset, batch_size=batch_size, shuffle=True)
+    # unlabeled_dataloader = DataLoader(unlabeled_dataset, batch_size=batch_size, shuffle=True)
 
-    # Returns the labeled and unlabeled data loaders
-    return labeled_dataloader, unlabeled_dataloader
+    # Returns the labeled and unlabeled data
+    return labeled_data[:, 1:], labeled_data[:, 0], data#, labeled_dataloader, unlabeled_dataloader

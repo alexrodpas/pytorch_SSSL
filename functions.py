@@ -51,7 +51,7 @@ def phi(unlabled_X, labled_X, unlabled_Y, labled_Y, W_t, eita_t):
     return W
 
 # Calculates the combined trace value of the given data, L_G, H and W
-def value(labeled_X, unlabeled_X, unlabeled_Y, labeled_Y, L_G, H, W, parameters):
+def trace_value(labeled_X, unlabeled_X, unlabeled_Y, labeled_Y, L_G, H, W, parameters):
     # trace of Y_u*L_G*Y_u^T
     Part1 = 5000000 * np.trace(np.dot(np.dot(unlabeled_Y, L_G), unlabeled_Y.T))
 
