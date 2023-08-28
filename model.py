@@ -35,8 +35,6 @@ class SSSL(nn.Module):
     
     # Trains the model
     def train(self, num_epochs, logger=False):
-        print("Training model...")      # logging
-
         # Trains the model num-epochs times
         for i in range(num_epochs):
             # Forward pass of the model, calculates trace value
@@ -49,7 +47,7 @@ class SSSL(nn.Module):
 
             if logger:
                 print("---------------------------------")  # logging
-                print(f"Epoch {i - 1}: Trace value = {F}")  # logging
+                print(f"Epoch {i + 1}: Trace value = {F}")  # logging
 
             # Backward pass of the model, updates parameters
             self.W = z_regularization(update_W(labeled_X, unlabeled_X, self.unlabeled_Y, self.labeled_Y, self.params))
@@ -65,17 +63,9 @@ class SSSL(nn.Module):
         
         if logger:
             print("---------------------------------")      # logging
-        
-        print("Model trained")          # logging
-        print("---------------------------------")          # logging
 
     # Tests the model's output on TS against Y
     def test(self, TS, Y):
-        print("Testing model...")       # logging
-
-        mT, nT = TS.shape               # for initialization
-        TS = np.hstack([(nT - 1)*np.ones((mT, 1)), z_regularization(TS)])   # adds length column
-        Y_true = reshape_y_true(Y, self.params['C'])    # one-hot encoding
         X, _, _, _ = self(TS, False)    # forward pass
         Z = np.dot(self.W.T, X)         # calculates label values
         mZ, _ = Z.shape                 # for looping through Z
@@ -83,7 +73,7 @@ class SSSL(nn.Module):
         # Calculates the model accuracy
         correct = 0                     # number of correct predictions
         for i in range(mZ):
-            if Y_true[i, np.argmax(Z, axis=1)[i]] == 1: # matches predictions to ground truth
+            if Y[i, np.argmax(Z, axis=1)[i]] == 1: # matches predictions to ground truth
                 correct += 1            # prediction was correct
         
         print(f"Model accuracy: {correct/mZ*100}%")     # logging

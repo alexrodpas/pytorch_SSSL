@@ -1,5 +1,7 @@
 import pandas as pd
+import numpy as np
 from torch.utils.data import Dataset, DataLoader
+from utils import reshape_y_true, z_regularization
 
 # Helper class for creating labeled time series dataset
 class LabeledTimeseriesDataset(Dataset):
@@ -52,15 +54,28 @@ class UnlabeledTimeseriesDataset(Dataset):
 # Loads the data from the given file path and creates labeled and unlabeled
 # datasets based on the given label ratio and loaded in the given batch size
 def load_dataset(file_path, label_ratio, batch_size):
-    label_ratio = max(min(label_ratio, 1.0), 0.0)       # failsafe
+    label_ratio = max(label_ratio, 0.0)                 # failsafe
     
     # Loads data from csv file
     data = pd.read_csv(file_path)
 
     # Separates labeled and unlabeled data based on the given label ratio
-    labeled_index = data.sample(frac=label_ratio, replace=False).index  # extracts labeled indices
-    labeled_data = data.iloc(labeled_index)             # extracts labeled data
-    data.drop(index=labeled_index, columns=0, inplace=True)     # removes labeled data
+    if label_ratio < 1.0:
+        labeled_index = data.sample(frac=label_ratio, replace=False).index  # extracts labeled indices
+        labeled_data = data[labeled_index].to_numpy()       # extracts labeled data
+        labels = reshape_y_true(labeled_data[:, 0], np.argmax(data[:, 0].to_numpy()))   # one-hot encoding
+        m, n = labeled_data.shape
+        labeled_data = np.hstack([(n - 1) * np.ones((m, 1)), z_regularization(labeled_data[:, 1:])])  # adds length column
+
+        unlabeled_data = data.drop(index=labeled_index).to_numpy()  # removes labeled data
+        m, n = unlabeled_data.shape
+        unlabeled_data = np.hstack([(n - 1) * np.ones((m, 1)), z_regularization(unlabeled_data[:, 1:])])  # adds length column
+    else:
+        labeled_data = data.to_numpy()                  # extracts labeled data
+        labels = reshape_y_true(labeled_data[:, 0], np.argmax(labeled_data[:, 0]))   # one-hot encoding
+        m, n = labeled_data.shape
+        labeled_data = np.hstack([(n - 1) * np.ones((m, 1)), z_regularization(labeled_data[:, 1:])])  # adds length column
+        unlabeled_data = None
 
     # Creates datasets based on the labeled and unlabeled data
     # labeled_dataset = LabeledTimeseriesDataset(labeled_data)
@@ -71,4 +86,4 @@ def load_dataset(file_path, label_ratio, batch_size):
     # unlabeled_dataloader = DataLoader(unlabeled_dataset, batch_size=batch_size, shuffle=True)
 
     # Returns the labeled and unlabeled data
-    return labeled_data[:, 1:], labeled_data[:, 0], data#, labeled_dataloader, unlabeled_dataloader
+    return labeled_data, labels, unlabeled_data#, labeled_dataloader, unlabeled_dataloader
