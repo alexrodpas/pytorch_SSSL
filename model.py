@@ -9,6 +9,8 @@ from updates import *
 class SSSL(nn.Module):
     # Initializes the model
     def __init__(self, labeled_TS, unlabeled_TS, labeled_Y, parameters):
+        super(SSSL, self).__init__()
+        
         self.params = parameters            # model training parameters
         self.labeled_TS = labeled_TS        # labeled time series
         self.unlabeled_TS = unlabeled_TS    # unlabeled time series
@@ -40,8 +42,8 @@ class SSSL(nn.Module):
             # Forward pass of the model, calculates trace value
             labeled_X, lXkj_skl, labeled_SS, lSSij_sil = self(self.labeled_TS, True)
             unlabeled_X, unXkj_skl, unlabeled_SS, unSSij_sil = self(self.unlabeled_TS, False)
-            L_G_tp1, G_tp1 = spectral_timeseries_similarity(unlabeled_X, self.params['sigma'])
-            F = trace_value(labeled_X, unlabeled_X, self.unlabeled_Y, self.labeled_Y, L_G_tp1, unlabeled_SS, self.W, self.params)
+            L_G, G = spectral_timeseries_similarity(unlabeled_X, self.params['sigma'])
+            F = trace_value(labeled_X, unlabeled_X, self.unlabeled_Y, self.labeled_Y, L_G, unlabeled_SS, self.W, self.params)
             if np.isnan(F):             # failsafe
                 break
 
@@ -51,8 +53,8 @@ class SSSL(nn.Module):
 
             # Backward pass of the model, updates parameters
             self.W = z_regularization(update_W(labeled_X, unlabeled_X, self.unlabeled_Y, self.labeled_Y, self.params))
-            self.unlabeled_Y = update_Y(self.W, unlabeled_X, L_G_tp1, self.params)
-            self.unlabeled_S = update_S(self.unlabeled_Y, unlabeled_X, self.W, G_tp1, self.unlabeled_S, unXkj_skl, unSSij_sil, unlabeled_SS, self.params)
+            self.unlabeled_Y = update_Y(self.W, unlabeled_X, L_G, self.params)
+            self.unlabeled_S = update_S(self.unlabeled_Y, unlabeled_X, self.W, G, self.unlabeled_S, unXkj_skl, unSSij_sil, unlabeled_SS, self.params)
             self.labeled_S = update_lS(self.labeled_Y, labeled_X, self.W, self.labeled_S, lXkj_skl, lSSij_sil, labeled_SS, self.params)
             self.unlabeled_S[:, 1:] = z_regularization(self.unlabeled_S[:, 1:]) # applies regularization
             self.labeled_S[:, 1:] = z_regularization(self.labeled_S[:, 1:])     # applies regularization
@@ -67,7 +69,7 @@ class SSSL(nn.Module):
     # Tests the model's output on TS against Y
     def test(self, TS, Y):
         X, _, _, _ = self(TS, False)    # forward pass
-        Z = np.dot(self.W.T, X)         # calculates label values
+        Z = np.dot(self.W.T, X).T       # calculates label values
         mZ, _ = Z.shape                 # for looping through Z
 
         # Calculates the model accuracy

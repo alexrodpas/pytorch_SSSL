@@ -1,5 +1,5 @@
 import numpy as np
-from derivations import S_derivation, lS_derivation
+from derivatives import S_derivation, lS_derivation
 
 # Updates the unlabeled shapelets using the given data, W, SS and additional variables and parameters
 def update_S(unlabeled_Y, unlabeled_X, W, ST_t, unlabeled_Shape_t, unlabeled_Xkj_skl, unSSij_sil, SS, parameters):
@@ -10,7 +10,7 @@ def update_S(unlabeled_Y, unlabeled_X, W, ST_t, unlabeled_Shape_t, unlabeled_Xkj
         DS_t = DS_t - parameters['eta'] * S_derivation(unlabeled_Y, unlabeled_X, W, ST_t, unlabeled_Shape_t, unlabeled_Xkj_skl, unSSij_sil, SS, parameters) # updates shapelets
     
     # Returns the updated unlabeled shapelets
-    return np.concatenate((unlabeled_Shape_t[:, 0], DS_t), axis=1)   # reincorporates shapelet length column
+    return np.concatenate((unlabeled_Shape_t[:, 0:1], DS_t), axis=1) # reincorporates shapelet length column
 
 # Updates the labeled shapelets using the given data, W, SS and additional variables and parameters
 def update_lS(labeled_Y, labeled_X, W, labeled_Shape_t, labeled_Xkj_tp1_skl, lSSij_sil, SS, parameters):
@@ -21,7 +21,7 @@ def update_lS(labeled_Y, labeled_X, W, labeled_Shape_t, labeled_Xkj_tp1_skl, lSS
         DS_t = DS_t - parameters['eta'] * lS_derivation(labeled_Y, labeled_X, W, labeled_Shape_t, labeled_Xkj_tp1_skl, lSSij_sil, SS, parameters)   # updates shapelets
 
     # Returns the updated labeled shapelets
-    return np.concatenate((labeled_Shape_t[:, 0], DS_t), axis=1)   # reincorporates shapelet length column
+    return np.concatenate((labeled_Shape_t[:, 0:1], DS_t), axis=1) # reincorporates shapelet length column
 
 # Updates W using the given data and additional parameters
 def update_W(labeled_X_t, unlabeled_X_t, unlabeled_Y_t, labeled_Y, parameters):

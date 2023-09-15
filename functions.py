@@ -23,7 +23,7 @@ def L21_norm(W):
         s.append(np.linalg.norm(W[j, :]))
 
     # Calculates the sum of all 2-norms and returns it
-    return sum(s)                         
+    return np.sum(np.array(s))                         
 
 # Calculates ff with normalization on the given data
 def F(unlabeled_X, labeled_X, W, unlabeled_Y, labeled_Y, norm_coeff=0.01):
