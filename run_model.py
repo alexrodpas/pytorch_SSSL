@@ -1,4 +1,3 @@
-import pandas as pd
 from model import SSSL
 from dataset import load_dataset
 
@@ -23,8 +22,8 @@ def main():
     batch_size = 64                             # batch size of loaded data
     num_epochs = 15                             # number of epochs to train the model
     
-    train_data_file = 'ItalyPowerDemand_TRAIN.csv'
-    test_data_file = 'ItalyPowerDemand_TEST.csv'
+    train_data_file = 'datasets/ItalyPowerDemand_TRAIN.csv'
+    test_data_file = 'datasets/ItalyPowerDemand_TEST.csv'
 
     # Loads data for training
     print("Loading training dataset...")        # logging
