@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 from utils import reshape_y_true, z_regularization
 
 # Helper class for creating labeled time series dataset
