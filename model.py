@@ -1,9 +1,8 @@
 import numpy as np
-import torch
 from torch import nn
 from functions import trace_value
-from utils import spectral_timeseries_similarity, distance_timeseries_shapelet, shapelet_similarity, EM, s_initialization, z_regularization, reshape_y_true
-from updates import *
+from utils import spectral_timeseries_similarity, distance_timeseries_shapelet, shapelet_similarity, EM, s_initialization, z_regularization
+from updates import update_S, update_lS, update_W, update_Y
 
 # Semi-Supervised Shapelet Learning model
 class SSSL(nn.Module):

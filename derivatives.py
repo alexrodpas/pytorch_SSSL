@@ -1,6 +1,6 @@
 import numpy as np
 
-# Calculates the S derivation of the given data, W, shapelets, ST, SS and additional variables and parameters
+# Calculates the S derivative of the given data, W, shapelets, ST, SS and additional variables and parameters
 def S_derivation(Y, X, W, G, Shape_t, Xkj_skl, SSij_sil, SS, parameters):
     DShape_t = Shape_t[:, 1:]                   # extracts shapelets
     mG, nG = G.shape                            # for looping through G
@@ -8,8 +8,8 @@ def S_derivation(Y, X, W, G, Shape_t, Xkj_skl, SSij_sil, SS, parameters):
     mY, nY = Y.shape                            # for looping through Y
 
     Part1 = np.zeros((mDShape, nDShape))        # initializing matrix to record part 1 values
-    Part2 = np.zeros((mDShape, nDShape))        # initializing matrix to record part 1 values
-    Part3 = np.zeros((mDShape, nDShape))        # initializing matrix to record part 1 values
+    Part2 = np.zeros((mDShape, nDShape))        # initializing matrix to record part 2 values
+    Part3 = np.zeros((mDShape, nDShape))        # initializing matrix to record part 3 values
 
     parameter1 = 1/2 * np.dot(Y.T, Y)                            # parameter for weighted calculations
     parameter2 = parameters['lambda_1'] * SS                     # parameter for weighted calculations
@@ -43,7 +43,7 @@ def S_derivation(Y, X, W, G, Shape_t, Xkj_skl, SSij_sil, SS, parameters):
     # Returns the combination of all parts
     return Part1 + Part2 + Part3
 
-# Calculates the SS derivation of the given data, W, shapelets at time t, SS, ST and additional variables and parameters
+# Calculates the SS derivative of the given data, W, shapelets at time t, SS, ST and additional variables and parameters
 def SS_derivation(unlabeled_Y, labeled_Y, unlabeled_X, labeled_X, W, G, unlabeled_Shape_t, labeled_Shape_t, unlabeled_Xkj_skl, labeled_Xkj_sk1, unSSij_sil, SS, parameters):
     DShape_t = unlabeled_Shape_t[:, 1:]         # extracts unlabeled shapelets
     mG, nG = G.shape                       # for looping through ST
@@ -96,7 +96,7 @@ def SS_derivation(unlabeled_Y, labeled_Y, unlabeled_X, labeled_X, W, G, unlabele
     # Returns the combination of all 4 parts
     return Part1 + Part2 + Part3 + Part4
 
-# Calculates the lS derivation with the given X and Y, W, shapelets at time t, and additional variables and parameters
+# Calculates the lS derivative with the given X and Y, W, shapelets at time t, and additional variables and parameters
 def lS_derivation(Y, X, W, Shape_t, Xkj_sk1, SSij_sil, SS, parameters):
     DShape_t = Shape_t[:, 1:]                   # extracts shapelets
     mDShape, nDShape = DShape_t.shape           # for looping through shapelets
