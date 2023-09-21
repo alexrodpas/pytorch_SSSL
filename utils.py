@@ -95,8 +95,8 @@ def shapelet_similarity(S, alpha, sigma):
             H[j, i] = H[i, j]           # ensures symmetry
 
             # Calculates the derivative of H_(ij) on S_(il)
-            Hij_sil[i, j, :length_s] = -1/(sigma**2) * XS[i, j] * H[i, j] * XSij_si
-            Hij_sil[j, i, :length_s] = -Hij_sil[i, j, :length_s]    # ensures symmetry
+            Hij_sil[i, j, :length_s] = (-1/sigma**2) * XS[i, j] * H[i, j] * XSij_si
+            Hij_sil[j, i, :length_s] = Hij_sil[i, j, :length_s]    # ensures symmetry
     
     # Returns similarity, distance and derivative matrices
     return H, XS, Hij_sil
