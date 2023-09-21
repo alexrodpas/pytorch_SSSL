@@ -7,7 +7,7 @@ def ff(unlabeled_X, labeled_X, W, unlabeled_Y, labeled_Y):
     M2 = np.dot(labeled_X.T, W) - labeled_Y         # labeled loss
 
     # Calculates f and ff values
-    f_W = 50000 * np.linalg.norm(M1, 'fro')**2 + 5000 * np.linalg.norm(W, 'fro')**2 + 50000 * np.linalg.norm(M2, 'fro')**2
+    f_W = 50000 * np.linalg.norm(M1, 'fro')**2 + 5000 * np.linalg.norm(W, 'fro')**2 + 50000 * np.linalg.norm(M2, 'fro')
     ff_W = 10000 * np.dot(labeled_X, labeled_X.T) * W - np.dot(labeled_X, labeled_Y) + 10000 * np.dot(unlabeled_X, unlabeled_X.T) * W - np.dot(unlabeled_X, unlabeled_Y.T) + W
 
     # Returns calculated values
@@ -34,9 +34,9 @@ def F(unlabeled_X, labeled_X, W, unlabeled_Y, labeled_Y, norm_coeff=0.01):
     return f_W + norm_coeff * L21_norm(W)
 
 # Calculates the phi value of the given data, W and eita
-def phi(unlabled_X, labled_X, unlabled_Y, labled_Y, W_t, eita_t):
+def phi(unlabeled_X, labled_X, unlabeled_Y, labeled_Y, W_t, eita_t):
     # Calculates the ff value of the given data using W at time t
-    _, ff_Wt = ff(unlabled_X, labled_X, W_t, unlabled_Y, labled_Y)
+    _, ff_Wt = ff(unlabeled_X, labled_X, W_t, unlabeled_Y, labeled_Y)
     U_t = W_t - 1/eita_t * ff_Wt            # calculates U
     W = []                                  # stores rows
     for j in range(W_t.shape[0]):
