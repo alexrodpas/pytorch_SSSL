@@ -60,7 +60,7 @@ def distance_timeseries_shapelet(T, S, alpha):
     X = np.zeros((mS, mT))              # for storing distances
     
     # Loops through T and S and calculates distances
-    for j in range(mT):
+    for j in range(mT): # the j-th time series
         for k in range(mS):
             shapelet = DS[k, 0:int(S[k, 0])]        # shapelet to compare
             time_series = DT[j, 0:int(T[j, 0])]     # time series to compare
@@ -95,7 +95,7 @@ def shapelet_similarity(S, alpha, sigma):
             H[j, i] = H[i, j]           # ensures symmetry
 
             # Calculates the derivative of H_(ij) on S_(il)
-            Hij_sil[i, j, :length_s] = (-1/sigma**2) * XS[i, j] * H[i, j] * XSij_si
+            Hij_sil[i, j, :length_s] = H[i, j] * (-2/sigma**2 * XS[i, j]) *  XSij_si
             Hij_sil[j, i, :length_s] = Hij_sil[i, j, :length_s]    # ensures symmetry
     
     # Returns similarity, distance and derivative matrices
