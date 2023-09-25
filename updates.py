@@ -7,7 +7,7 @@ def update_S(unlabeled_Y, unlabeled_X, W, ST_t, unlabeled_Shape_t, unlabeled_Xkj
 
     # Loops through update script IMax times
     for i in range(parameters['Imax']):
-        DS_t = DS_t - parameters['eta'] * S_derivation(unlabeled_Y, unlabeled_X, W, ST_t, unlabeled_Shape_t, unlabeled_Xkj_skl, unSSij_sil, SS, parameters) # updates shapelets
+        DS_t = unlabeled_Shape_t[:, 1:] - parameters['eta'] *  S_derivation(unlabeled_Y, unlabeled_X, W, ST_t, unlabeled_Shape_t, unlabeled_Xkj_skl, unSSij_sil, SS, parameters) # updates shapelets
         unlabeled_Shape_t = np.concatenate((unlabeled_Shape_t[:, 0:1], DS_t), axis=1) # reincorporates shapelet length column
     # Returns the updated unlabeled shapelets
     return unlabeled_Shape_t
@@ -17,8 +17,8 @@ def update_lS(labeled_Y, labeled_X, W, labeled_Shape_t, labeled_Xkj_tp1_skl, lSS
     DS_t = labeled_Shape_t[:, 1:]                   # extracts shapelets
 
     # Loops through update script IMax times
-    for i in range(parameters['Imax']):               
-        DS_t = DS_t - parameters['eta'] * lS_derivation(labeled_Y, labeled_X, W, labeled_Shape_t, labeled_Xkj_tp1_skl, lSSij_sil, SS, parameters)   # updates shapelets
+    for i in range(parameters['Imax']):           
+        DS_t = labeled_Shape_t[:, 1:] - parameters['eta'] * lS_derivation(labeled_Y, labeled_X, W, labeled_Shape_t, labeled_Xkj_tp1_skl, lSSij_sil, SS, parameters)    # updates shapelets
         labeled_Shape_t = np.concatenate((labeled_Shape_t[:, 0:1], DS_t), axis=1) # reincorporates shapelet length column
     # Returns the updated labeled shapelets
     return labeled_Shape_t

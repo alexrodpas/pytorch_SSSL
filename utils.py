@@ -182,8 +182,8 @@ def kmeans(Data, C, epsilon=0.001):
     # Returns the calculated centroids and cluster assignments
     return C_t, Y
 
-# Obtains a segment of T with a specific length
-def obtain_segment(T, length):
+# Obtains all segments of T with a specific length
+def obtain_segments(T, length):
     L = T[:, 0].astype(int)     # length column
     DT = T[:, 1:]               # time series data
     m, _ = DT.shape             # for looping through DT
@@ -200,13 +200,14 @@ def obtain_segment(T, length):
     # Returns a matrix where each row is a segment of T
     return np.array(segment_matrix)
 
+# Initialize shapelets
 def s_initialization(T, parameters):
     S = np.zeros((parameters['k'] * parameters['R'], 1 + parameters['R'] * parameters['Lmin'])) # shapelets
 
     # Creates k shapelets for each of R lengths and saves them to S
     for j in range(parameters['R']):
         length = (j + 1) * parameters['Lmin']       # shapelet length
-        segment_matrix = obtain_segment(T, length)  # time series segments
+        segment_matrix = obtain_segments(T, length)  # time series segments
         DS = np.dot(np.ones((parameters['k'], 1)), np.mean(segment_matrix, axis=0).reshape(1, segment_matrix.shape[1])) # initializes shapelets as mean time series values
         # DS, _ = EM(segment_matrix.T, parameters['k'])
         S[j * parameters['k']:(j + 1) * parameters['k'], 0] = length            # records shapelet length
