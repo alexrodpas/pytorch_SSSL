@@ -128,13 +128,13 @@ def EM(Data, C, epsilon=0.1):
         # Calculates the optimal centroids based on the current clusters
         for i in range(C):
             # Failsafe for faulty cluster assignment
-            if len(np.where(Y[i, :] == 1)) == 0:
-                index = np.random.randint(n)
-            else:
+            if np.size((np.where(Y[i, :] == 1))) > 0:
+                #index = np.random.randint(n)
+            #else:
                 index = np.where(Y[i, :] == 1)[0]
             
-            # Calculates the mean of the data on the selected cluster
-            C_tp1[:, i] = np.mean(Data[:, index], axis=1)
+                # Calculates the mean of the data on the selected cluster
+                C_tp1[:, i] = np.mean(Data[:, index], axis=1)
         
         # Calculates the trace if the difference between the current centroids and optimal centroids
         v = np.trace(np.dot((C_tp1 - C_t).T, C_tp1 - C_t))
