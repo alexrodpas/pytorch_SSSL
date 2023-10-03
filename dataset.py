@@ -62,7 +62,7 @@ def load_dataset(file_path, label_ratio, batch_size):
     # Separates labeled and unlabeled data based on the given label ratio
     if label_ratio < 1.0:
         labeled_index = data.sample(frac=label_ratio, replace=False).index  # extracts labeled indices
-        labeled_data = data.iloc[labeled_index].drop(columns=0).to_numpy()       # extracts labeled data
+        labeled_data = data.iloc[labeled_index].to_numpy()       # extracts labeled data
         labels = reshape_y_true(labeled_data[:, 0].astype(int), np.max(labeled_data[:, 0].astype(int)) + 1)   # one-hot encoding
         m, n = labeled_data.shape
         labeled_data = np.hstack([(n - 1) * np.ones((m, 1)), z_regularization(labeled_data[:, 1:])])  # adds length column
@@ -71,7 +71,7 @@ def load_dataset(file_path, label_ratio, batch_size):
         m, n = unlabeled_data.shape
         unlabeled_data = np.hstack([(n - 1) * np.ones((m, 1)), z_regularization(unlabeled_data[:, 1:])])  # adds length column
     else:
-        labeled_data = data.drop(columns=0).to_numpy()              # extracts labeled data
+        labeled_data = data.to_numpy()              # extracts labeled data
         labels = reshape_y_true(labeled_data[:, 0].astype(int), np.max(labeled_data[:, 0].astype(int)) + 1)   # one-hot encoding
         m, n = labeled_data.shape
         labeled_data = np.hstack([(n - 1) * np.ones((m, 1)), z_regularization(labeled_data[:, 1:])])  # adds length column
