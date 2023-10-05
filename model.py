@@ -67,6 +67,7 @@ class SSSL(nn.Module):
 
     # Tests the model's output on TS against Y
     def test(self, TS, Y):
+        TS[:, 1:] = z_regularization(TS[:, 1:])
         X, _, _, _ = self(TS, False)    # forward pass
         Z = np.dot(self.W.T, X).T       # calculates label values
         mZ, _ = Z.shape                 # for looping through Z
