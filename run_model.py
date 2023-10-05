@@ -9,16 +9,16 @@ def main():
     parameters['R'] = 3                         # the number of scales of shapelets length
     parameters['C'] = 2                         # the number of classes/clusters
     parameters['alpha'] = -1e2                  # parameter in Soft Minimum Function
-    parameters['sigma'] = 1e1                   # parameter in RBF kernel
-    parameters['lambda_1'] = -8                 # regularization parameter
-    parameters['lambda_2'] = -8                 # regularization parameter
-    parameters['lambda_3'] = -8                 # regularization parameter
-    parameters['lambda_4'] = -8                 # regularization parameter
-    parameters['Imax'] = 1                      # the number of internal iterations
-    parameters['eta'] = 1e-1                    # learning rate
+    parameters['sigma'] = 1                     # parameter in RBF kernel
+    parameters['lambda_1'] = 1                  # regularization parameter
+    parameters['lambda_2'] = 1                  # regularization parameter
+    parameters['lambda_3'] = 1                  # regularization parameter
+    parameters['lambda_4'] = 1                  # regularization parameter
+    parameters['Imax'] = 50                     # the number of internal iterations
+    parameters['eta'] = 1e-2                    # learning rate
     parameters['epsilon'] = 1e-1                # internal convergence parameter
     parameters['w'] = 1e-2                      # weight initialization coefficient
-    labeled_ratio = 0.2                         # percents of labled data
+    labeled_ratio = 0.2                         # percents of labeled data
     batch_size = 64                             # batch size of loaded data
     num_epochs = 15                             # number of epochs to train the model
     
