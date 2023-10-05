@@ -26,7 +26,7 @@ def L21_norm(W):
     return np.sum(np.array(s))                         
 
 # Calculates ff with normalization on the given data
-def F(unlabeled_X, labeled_X, W, unlabeled_Y, labeled_Y, norm_coeff=0.01):
+def norm_ff(unlabeled_X, labeled_X, W, unlabeled_Y, labeled_Y, norm_coeff=0.01):
     # Calculates the f value of the given data using W
     f_W, _ = ff(unlabeled_X, labeled_X, W, unlabeled_Y, labeled_Y)
 
