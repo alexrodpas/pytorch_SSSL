@@ -44,7 +44,7 @@ def distance_longseries_shortseries(series_long, series_short, alpha):
     for l in range(m):
         part1 = 1/X_2**2                    # inverse of squared exponential sum of norms
         part2 = D1[:, l]                    # l moment in each segment
-        part3 = np.multiply(np.exp(alpha * D2), X_2 * (1 + alpha * D2) - alpha * X_1) # coefficient
+        part3 = np.multiply(np.exp(alpha * D2), (1 + alpha * D2) * X_2 - alpha * X_1) # coefficient
         Xkj_sk.append(part1 * np.sum(np.multiply(part2, part3)))  # derivative of X_(kj) on S_(kl)
 
     # Returns distance between series, derivative array
@@ -61,9 +61,9 @@ def distance_timeseries_shapelet(T, S, alpha):
     
     # Loops through T and S and calculates distances
     for j in range(mT): # the j-th time series
+        time_series = DT[j, 0:int(T[j, 0])]     # time series to compare
         for k in range(mS):
-            shapelet = DS[k, 0:int(S[k, 0])]        # shapelet to compare
-            time_series = DT[j, 0:int(T[j, 0])]     # time series to compare
+            shapelet = DS[k, 0:int(S[k, 0])]    # shapelet to compare
 
             # Calculates the distance between the time series and the shapelet
             X[k, j], Xkj_sk = distance_longseries_shortseries(time_series, shapelet, alpha)
