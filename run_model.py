@@ -9,11 +9,11 @@ def main():
     parameters['R'] = 3                         # the number of scales of shapelets length
     parameters['C'] = 2                         # the number of classes/clusters
     parameters['alpha'] = -1e2                  # parameter in Soft Minimum Function
-    parameters['sigma'] = 1                     # parameter in RBF kernel
-    parameters['lambda_1'] = 1                  # regularization parameter for shapelet similarity
-    parameters['lambda_2'] = 1                  # regularization parameter for classification boundary
-    parameters['lambda_3'] = 1                  # regularization parameter for least square minimization with respect to unlabeled time series
-    parameters['lambda_4'] = 1                  # regularization parameter for least square minimization with respect to labeled time series
+    parameters['sigma'] = 1e0                   # parameter in RBF kernel
+    parameters['lambda_1'] = 1e0                # regularization parameter for shapelet similarity
+    parameters['lambda_2'] = 1e0                # regularization parameter for classification boundary
+    parameters['lambda_3'] = 1e0                # regularization parameter for least square minimization with respect to unlabeled time series
+    parameters['lambda_4'] = 1e0                # regularization parameter for least square minimization with respect to labeled time series
     parameters['Imax'] = 50                     # the number of internal iterations
     parameters['eta'] = 1e-2                    # learning rate
     parameters['epsilon'] = 1e-1                # internal convergence parameter

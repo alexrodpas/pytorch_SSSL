@@ -28,19 +28,19 @@ def update_lS(labeled_Y, labeled_X, W, labeled_Shape_t, labeled_Xkj_tp1_skl, lSS
 # Updates W using the given data and additional parameters
 def update_W(labeled_X_t, unlabeled_X_t, unlabeled_Y_t, labeled_Y, parameters):
     mX, _ = unlabeled_X_t.shape                     # for generating I matrix
-    p1 = parameters['lambda_2'] * np.dot(unlabeled_X_t, unlabeled_X_t.T) + parameters['lambda_4'] * np.dot(labeled_X_t, labeled_X_t.T) + parameters['lambda_3'] * np.eye(mX)    # weighted addition to XX^T
-    p2 = parameters['lambda_2'] * np.dot(unlabeled_X_t, unlabeled_Y_t.T) + parameters['lambda_4'] * np.dot(labeled_X_t, labeled_Y)  # weighted XY^T
+    p1 = parameters['lambda_2'] * np.eye(mX) + parameters['lambda_3'] * np.dot(unlabeled_X_t, unlabeled_X_t.T) + parameters['lambda_4'] * np.dot(labeled_X_t, labeled_X_t.T)    # weighted addition to XX^T
+    p2 = parameters['lambda_3'] * np.dot(unlabeled_X_t, unlabeled_Y_t.T) + parameters['lambda_4'] * np.dot(labeled_X_t, labeled_Y.T)  # weighted XY^T
     W_tp1 = np.dot(np.linalg.inv(p1), p2)           # combination of both calculations
 
     # Returns the updated W
     return W_tp1
 
 # Updates Y using the given data, updated W, L_G and additional parameters
-def update_Y(W_tp1, unlabeled_X_t, L_Gt, parameters):
-    p1 = parameters['lambda_2'] * np.dot(W_tp1.T, unlabeled_X_t)    # weighted Y prediction
+def update_Z(W_t, unlabeled_X_t, L_Gt, parameters):
+    p1 = parameters['lambda_3'] * np.dot(W_t.T, unlabeled_X_t)  # weighted Y prediction
     mL, _ = L_Gt.shape                              # for generating I matrix
-    p2 = L_Gt + parameters['lambda_2'] * np.eye(mL) # weighted diagonal addition to L_G
-    Y_tp1 = np.dot(p1, np.linalg.inv(p2))           # combination of both calculations
+    p2 = L_Gt + parameters['lambda_3'] * np.eye(mL) # weighted diagonal addition to L_G
+    Z_tp1 = np.dot(p1, np.linalg.inv(p2))           # combination of both calculations
     
     # Returns updated Y for unlabeled cases
-    return Y_tp1
+    return Z_tp1
