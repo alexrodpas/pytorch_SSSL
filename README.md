@@ -1,4 +1,7 @@
-# pytorch_SSSL - A PyTorch implementation of the Semi-Supervised Shapelet Learning (SSSL) algorithm, defined in the research paper by Wang et al. (2019).
+# pytorch_SSSL
+---
+
+# A PyTorch implementation of the Semi-Supervised Shapelet Learning (SSSL) algorithm, defined in the research paper by Wang et al. (2019).
 
 __Note: This is still a Work in Progress__
 
