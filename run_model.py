@@ -18,7 +18,9 @@ def main():
     parameters['eta'] = 1e-2                    # learning rate
     parameters['epsilon'] = 1e-1                # internal convergence parameter
     parameters['w'] = 1e-2                      # weight initialization coefficient
-    labeled_ratio = 0.1                         # percents of labeled data
+    parameters['zeta_1'] = 1e1                  # additional orthogonality constant
+    parameters['zeta_2'] = 1e1                  # additional orthogonality constant
+    labeled_ratio = 0.9                         # percents of labeled data
     batch_size = 64                             # batch size of loaded data
     num_epochs = 15                             # number of epochs to train the model
     

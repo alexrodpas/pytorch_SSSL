@@ -51,9 +51,9 @@ def phi(unlabeled_X, labled_X, unlabeled_Y, labeled_Y, W_t, eita_t):
     return W
 
 # Calculates the combined trace value of the given data, L_G, H and W
-def objective(labeled_X, unlabeled_X, unlabeled_Y, labeled_Y, L_G, H, W, parameters):
+def objective(labeled_X, unlabeled_X, Z, labeled_Y, L_G, H, W, parameters):
     # trace of Y_u*L_G*Y_u^T
-    Part1 = 0.5 * np.trace(np.dot(np.dot(unlabeled_Y, L_G), unlabeled_Y.T))
+    Part1 = 0.5 * np.trace(np.dot(np.dot(Z, L_G), Z.T))
 
     # ||H||_F^2
     Part2 = 0.5 * parameters['lambda_1'] * np.linalg.norm(H)**2
@@ -62,10 +62,16 @@ def objective(labeled_X, unlabeled_X, unlabeled_Y, labeled_Y, L_G, H, W, paramet
     Part3 = 0.5 * parameters['lambda_2'] * np.linalg.norm(W)**2
 
     # ||W^T*X_u-Z||_F^2
-    Part4 = 0.5 * parameters['lambda_3'] * np.linalg.norm(np.dot(W.T, unlabeled_X) - unlabeled_Y)**2
+    Part4 = 0.5 * parameters['lambda_3'] * np.linalg.norm(np.dot(W.T, unlabeled_X) - Z)**2
 
     # ||W^T*X_l-Y_l||_F^2
     Part5 = 0.5 * parameters['lambda_4'] * np.linalg.norm(np.dot(W.T, labeled_X) - labeled_Y)**2
+    
+    # Z^TZ - I
+    Part6 = 0.5 * parameters['zeta_1'] * np.trace(np.matmul(Z.T, Z) - np.eye(Z.shape[1]))
+    
+    # Z
+    Part7 = np.sum(parameters['zeta_2'] * Z)
 
-    # Returns the weighted sum of the different trace values
-    return Part1 + Part2 + Part3 + Part4 + Part5
+    # Returns the weighted sum of the different values
+    return Part1 + Part2 + Part3 + Part4 + Part5 + Part6 + Part7

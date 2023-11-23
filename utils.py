@@ -4,16 +4,16 @@ import numpy as np
 def spectral_timeseries_similarity(X, sigma):
     _, n = X.shape                              # For looping through X
     D_G = np.zeros((n, n))                      # Initializing the diagonal
-    G = np.zeros((n, n))                        # Initializing norm matrix
+    G = np.zeros((n, n))                        # Initializing similarity matrix
     
     # Loops through X to calculate norm, similarity matrices
-    for j in range(n):
-        for h in range(j, n):
-            g = np.linalg.norm(X[:, j] - X[:, h])   # 2-norm between columns
-            G[j, h] = np.exp(-g**2 / sigma**2)      # Calculates G entry
-            G[h, j] = G[j, h]                       # Ensures symmetry
+    for i in range(n):
+        for j in range(i, n):
+            g = np.linalg.norm(X[:, i] - X[:, j])   # 2-norm between columns
+            G[i, j] = np.exp(-g**2 / sigma**2)      # Calculates G entry
+            G[j, i] = G[i, j]                       # Ensures symmetry
         
-        D_G[j, j] = np.sum(G[j, :])             # Calculates diagonal value
+        D_G[i, i] = np.sum(G[i, :])             # Calculates diagonal value
     
     L_G = D_G - G                               # Calculates similarity matrix
     
@@ -22,33 +22,26 @@ def spectral_timeseries_similarity(X, sigma):
 
 # Calculates the distance between a long series and a short series, using alpha
 def distance_longseries_shortseries(series_long, series_short, alpha):
-    m = len(series_short)                   # for looping through short series
-    num_seg = len(series_long) - m + 1      # for looping through long series
-    D1 = []                                 # for storing distances
-    D2 = []                                 # for storing squared distance norms
+    l = len(series_short)                   # for looping through short series
+    num_seg = len(series_long) - l + 1      # for looping through long series
+    dijq_skp = np.zeros((num_seg, l))       # for storing dijq_skp
+    dijq = np.zeros(num_seg)                # for storing d_i,j,q
 
     # Loops through all possible segments and stores distances, norms
     for q in range(num_seg):
-        segment = series_long[q:q+m]  # the q-th segment of the long series
-        D2.append(1/m * np.linalg.norm(series_short - segment)**2)  # stores average |v|_2^2
-        D1.append(1/m * (series_short - segment))                   # stores distance
+        segment = series_long[q:q+l]  # the q-th segment of the long series
+        dijq_skp[q] = (2/l * (series_short - segment))                    # stores dijq_skp
+        dijq[q] = (1/l * np.linalg.norm(series_short - segment)**2)   # stores d_i,j,q
     
-    D1 = np.array(D1)                       # numpy array conversion
-    D2 = np.array(D2)                       # numpy array conversion
-    X_1 = np.sum(np.multiply(D2, np.exp(alpha * D2)))   # weighted sum of norms
-    X_2 = np.sum(np.exp(alpha * D2))        # exponential sum of norms
-    X = X_1/X_2  # the distance between the series_long and series_short
-    Xkj_sk = []                             # for storing derivatives
+    big_lambda = np.sum(np.multiply(dijq, np.exp(alpha * dijq)))    # /\
+    big_theta = np.sum(np.exp(alpha * dijq))                        # (-)
+    X = big_lambda/big_theta    # the minimum distance between the series_long and series_short
 
-    # Loops through the short sequence to calculate distances, derivatives
-    for l in range(m):
-        part1 = 1/X_2**2                    # inverse of squared exponential sum of norms
-        part2 = D1[:, l]                    # l moment in each segment
-        part3 = np.multiply(np.exp(alpha * D2), (1 + alpha * D2) * X_2 - alpha * X_1) # coefficient
-        Xkj_sk.append(part1 * np.sum(np.multiply(part2, part3)))  # derivative of X_(kj) on S_(kl)
+    exp_sum = np.multiply(np.exp(alpha * dijq), (1 + alpha * dijq) * big_theta - alpha * big_lambda)
+    Xij_skp = (1/(big_theta**2) * np.sum(np.dot(exp_sum, dijq_skp)))    # for storing Xij_skp
 
     # Returns distance between series, derivative array
-    return X, np.array(Xkj_sk)
+    return X, Xij_skp
 
 # Calculates the distances between given time series T and shapelets S, using alpha
 def distance_timeseries_shapelet(T, S, alpha):
@@ -56,27 +49,27 @@ def distance_timeseries_shapelet(T, S, alpha):
     DT = T[:, 1:]                       # all but the first column of T
     mS, nS = S.shape                    # for looping through S
     DS = S[:, 1:]                       # all but the first column of S
-    Xkj_skl = np.zeros((mS, mT, nS-1))  # for storing derivatives
+    Xij_skp = np.zeros((mS, mT, nS-1))  # for storing derivatives
     X = np.zeros((mS, mT))              # for storing distances
     
     # Loops through T and S and calculates distances
     for j in range(mT): # the j-th time series
         time_series = DT[j, 0:int(T[j, 0])]     # time series to compare
-        for k in range(mS):
-            shapelet = DS[k, 0:int(S[k, 0])]    # shapelet to compare
+        for i in range(mS):
+            shapelet = DS[i, 0:int(S[i, 0])]    # shapelet to compare
 
             # Calculates the distance between the time series and the shapelet
-            X[k, j], Xkj_sk = distance_longseries_shortseries(time_series, shapelet, alpha)
-            Xkj_skl[k, j, 0:int(S[k, 0])] = Xkj_sk  # stores derivative
+            X[i, j], Xij_sk = distance_longseries_shortseries(time_series, shapelet, alpha)
+            Xij_skp[i, j, 0:int(S[i, 0])] = Xij_sk  # stores derivative
     
     # Returns distance and derivative matrices
-    return X, Xkj_skl
+    return X, Xij_skp
 
 # Calculates the similarity between the given shapelets S, using alpha and sigma
 def shapelet_similarity(S, alpha, sigma):
     m, n = S.shape                      # for looping through S
     DS = S[:, 1:]                       # all but the first column of S
-    Hij_sil = np.zeros((m, m, n-1))     # for storing derivatives
+    Hij_skp = np.zeros((m, m, n-1))     # for storing derivatives
     H = np.zeros((m, m))                # for storing similarity
     XS = np.zeros((m, m))               # for storing distances
     
@@ -95,11 +88,11 @@ def shapelet_similarity(S, alpha, sigma):
             H[j, i] = H[i, j]           # ensures symmetry
 
             # Calculates the derivative of H_(ij) on S_(il)
-            Hij_sil[i, j, :length_s] = H[i, j] * (-2/sigma**2 * XS[i, j]) *  XSij_si
-            Hij_sil[j, i, :length_s] = -Hij_sil[i, j, :length_s]    # ensures symmetry
+            Hij_skp[i, j, :length_s] = H[i, j] * (-1/sigma**2 * XS[i, j]) *  XSij_si
+            Hij_skp[j, i, :length_s] = Hij_skp[i, j, :length_s]    # ensures symmetry
     
     # Returns similarity, distance and derivative matrices
-    return H, XS, Hij_sil
+    return H, XS, Hij_skp
 
 # Clusters the data into C centroids using the given epsilon
 def EM(Data, C, epsilon=0.1):
