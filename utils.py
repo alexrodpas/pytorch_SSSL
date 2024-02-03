@@ -1,98 +1,96 @@
 import numpy as np
+import torch
 
 # Calculates the spectral time series similarity of the given data and sigma
 def spectral_timeseries_similarity(X, sigma):
-    _, n = X.shape                              # For looping through X
-    D_G = np.zeros((n, n))                      # Initializing the diagonal
-    G = np.zeros((n, n))                        # Initializing similarity matrix
+    n, _ = X.shape                              # For looping through X
+    D_G = torch.zeros((n, n))                   # Initializing the diagonal
+    G = torch.zeros((n, n))                     # Initializing similarity matrix
     
     # Loops through X to calculate norm, similarity matrices
     for i in range(n):
         for j in range(i, n):
-            g = np.linalg.norm(X[:, i] - X[:, j])   # 2-norm between columns
-            G[i, j] = np.exp(-g**2 / sigma**2)      # Calculates G entry
-            G[j, i] = G[i, j]                       # Ensures symmetry
+            g = torch.linalg.norm(X[i] - X[j])          # 2-norm between timeseries
+            G[i, j] = torch.exp(-g**2 / sigma**2)       # Calculates G entry
+            G[j, i] = G[i, j]                           # Ensures symmetry
         
-        D_G[i, i] = np.sum(G[i, :])             # Calculates diagonal value
+        D_G[i, i] = torch.sum(G[i])             # Calculates diagonal value
     
     L_G = D_G - G                               # Calculates similarity matrix
     
-    # Returns similarity, norm matrices
-    return L_G, G
+    # Returns similarity matrix
+    return L_G
 
 # Calculates the distance between a long series and a short series, using alpha
 def distance_longseries_shortseries(series_long, series_short, alpha):
     l = len(series_short)                   # for looping through short series
     num_seg = len(series_long) - l + 1      # for looping through long series
-    dijq_skp = np.zeros((num_seg, l))       # for storing dijq_skp
-    dijq = np.zeros(num_seg)                # for storing d_i,j,q
+    dijq_skp = torch.zeros((num_seg, l))    # for storing dijq_skp
+    dijq = torch.zeros(num_seg)             # for storing d_i,j,q
 
     # Loops through all possible segments and stores distances, norms
     for q in range(num_seg):
         segment = series_long[q:q+l]  # the q-th segment of the long series
-        dijq_skp[q] = (2/l * (series_short - segment))                    # stores dijq_skp
-        dijq[q] = (1/l * np.linalg.norm(series_short - segment)**2)   # stores d_i,j,q
+        dijq_skp[q] = (2/l * (series_short - segment))                  # stores dijq_skp
+        dijq[q] = (1/l * torch.linalg.norm(series_short - segment)**2)  # stores d_i,j,q
     
-    big_lambda = np.sum(np.multiply(dijq, np.exp(alpha * dijq)))    # /\
-    big_theta = np.sum(np.exp(alpha * dijq))                        # (-)
+    big_lambda = torch.sum(torch.mul(dijq, torch.exp(alpha * dijq)))    # /\
+    big_theta = torch.sum(torch.exp(alpha * dijq))                      # (-)
     X = big_lambda/big_theta    # the minimum distance between the series_long and series_short
 
-    exp_sum = np.multiply(np.exp(alpha * dijq), (1 + alpha * dijq) * big_theta - alpha * big_lambda)
-    Xij_skp = (1/(big_theta**2) * np.sum(np.dot(exp_sum, dijq_skp)))    # for storing Xij_skp
+    #exp_sum = torch.mul(torch.exp(alpha * dijq), (1 + alpha * dijq) * big_theta - alpha * big_lambda)
+    #Xij_skp = (1/(big_theta**2) * torch.sum(torch.dot(exp_sum, dijq_skp)))  # for storing Xij_skp
 
     # Returns distance between series, derivative array
-    return X, Xij_skp
+    return X#, Xij_skp
 
 # Calculates the distances between given time series T and shapelets S, using alpha
-def distance_timeseries_shapelet(T, S, alpha):
-    mT, _ = T.shape                     # for looping through T
-    DT = T[:, 1:]                       # all but the first column of T
-    mS, nS = S.shape                    # for looping through S
-    DS = S[:, 1:]                       # all but the first column of S
-    Xij_skp = np.zeros((mS, mT, nS-1))  # for storing derivatives
-    X = np.zeros((mS, mT))              # for storing distances
+def distance_timeseries_shapelet(T, lengths, S, alpha):
+    mT, _ = T.shape                         # for looping through T
+    mS, nS = S.shape                        # for looping through S
+    #Xij_skp = torch.zeros((mS, mT, nS-1))   # for storing derivatives
+    X = torch.zeros((mT, mS))               # for storing distances
     
     # Loops through T and S and calculates distances
-    for j in range(mT): # the j-th time series
-        time_series = DT[j, 0:int(T[j, 0])]     # time series to compare
-        for i in range(mS):
-            shapelet = DS[i, 0:int(S[i, 0])]    # shapelet to compare
+    for i in range(mT): # the j-th time series
+        TS = T[i]                               # time series to compare
+        for j in range(mS):
+            shapelet = S[j, 0:int(lengths[j])]  # shapelet to compare
 
             # Calculates the distance between the time series and the shapelet
-            X[i, j], Xij_sk = distance_longseries_shortseries(time_series, shapelet, alpha)
-            Xij_skp[i, j, 0:int(S[i, 0])] = Xij_sk  # stores derivative
+            X[i, j] = distance_longseries_shortseries(TS, shapelet, alpha)
+            #Xij_skp[i, j, 0:int(S[i, 0])] = Xij_sk  # stores derivative
     
-    # Returns distance and derivative matrices
-    return X, Xij_skp
+    # Returns distances
+    return X#, Xij_skp
 
 # Calculates the similarity between the given shapelets S, using alpha and sigma
-def shapelet_similarity(S, alpha, sigma):
+def shapelet_similarity(lengths, S, alpha, sigma):
     m, n = S.shape                      # for looping through S
-    DS = S[:, 1:]                       # all but the first column of S
-    Hij_skp = np.zeros((m, m, n-1))     # for storing derivatives
-    H = np.zeros((m, m))                # for storing similarity
-    XS = np.zeros((m, m))               # for storing distances
+    # Hij_skp = np.zeros((m, m, n))       # for storing derivatives
+    H = torch.zeros((m, m))             # for storing similarity
+    XS = torch.zeros((m, m))            # for storing distances
     
     # Loops through shapelets and calculates their similarities
     for i in range(m):
-        length_s = S[i, 0].astype(int)
-        sh_s = DS[i, :length_s]         # the i-th shapelet
+        length_s = lengths[i]
+        sh_s = S[i, :length_s]          # the i-th shapelet
         for j in range(i, m):
-            length_l = S[j, 0].astype(int)
-            sh_l = DS[j, :length_l]     # the j-th shapelet
-            XS[i, j], XSij_si = distance_longseries_shortseries(sh_l, sh_s, alpha) # distance between the i-th shapelet and the j-th shapelet
+            length_l = lengths[j]
+            sh_l = S[j, :length_l]      # the j-th shapelet
+            XS[i, j] = distance_longseries_shortseries(sh_l, sh_s, alpha) # distance between the i-th shapelet and the j-th shapelet
             XS[j, i] = XS[i, j]         # ensures symmetry
 
             # Calculates the similarity matrix of shapelets
-            H[i, j] = np.exp(-(XS[i, j]/sigma)**2)
+            H[i, j] = torch.exp(-(XS[i, j]/sigma)**2)
             H[j, i] = H[i, j]           # ensures symmetry
 
             # Calculates the derivative of H_(ij) on S_(il)
-            Hij_skp[i, j, :length_s] = H[i, j] * (-1/sigma**2 * XS[i, j]) *  XSij_si
-            Hij_skp[j, i, :length_s] = Hij_skp[i, j, :length_s]    # ensures symmetry
+            #Hij_skp[i, j, :length_s] = H[i, j] * (-1/sigma**2 * XS[i, j]) *  XSij_si
+            #Hij_skp[j, i, :length_s] = Hij_skp[i, j, :length_s]    # ensures symmetry
     
-    # Returns similarity, distance and derivative matrices
-    return H, XS, Hij_skp
+    # Returns similarity matrix
+    return H# , XS, Hij_skp
 
 # Clusters the data into C centroids using the given epsilon
 def EM(Data, C, epsilon=0.1):
@@ -194,20 +192,17 @@ def obtain_segments(T, length):
     return np.array(segment_matrix)
 
 # Initialize shapelets
-def s_initialization(T, parameters):
+def s_initialization(parameters):
     S = np.zeros((parameters['k'] * parameters['R'], 1 + parameters['R'] * parameters['Lmin'])) # shapelets
+    L = np.zeros(parameters['k'] * parameters['R']).astype(int)
 
     # Creates k shapelets for each of R lengths and saves them to S
     for j in range(parameters['R']):
         length = (j + 1) * parameters['Lmin']       # shapelet length
-        segment_matrix = obtain_segments(T, length)  # time series segments
-        DS = np.dot(np.ones((parameters['k'], 1)), np.mean(segment_matrix, axis=0).reshape(1, segment_matrix.shape[1])) # initializes shapelets as mean time series values
-        # DS, _ = EM(segment_matrix.T, parameters['k'])
-        S[j * parameters['k']:(j + 1) * parameters['k'], 0] = length            # records shapelet length
-        S[j * parameters['k']:(j + 1) * parameters['k'], 1:length + 1] = DS     # saves shapelets
+        L[j * parameters['k']:(j + 1) * parameters['k']] = length   # records shapelet length
     
     # Returns the saved shapelets with their lengths
-    return S
+    return L, S
 
 # Reshapes the Y_true matrix into a one-hot encoding
 def reshape_y_true(Y_true, C):

@@ -50,7 +50,7 @@ def phi(unlabeled_X, labled_X, unlabeled_Y, labeled_Y, W_t, eita_t):
     # Returns the weighted/zeroed out rows of U, phi
     return W
 
-# Calculates the combined trace value of the given data, L_G, H and W
+# [DEPRECATED] Calculates the objective value of the given data, L_G, H and W
 def objective(labeled_X, unlabeled_X, Z, labeled_Y, L_G, H, W, parameters):
     # trace of Y_u*L_G*Y_u^T
     Part1 = 0.5 * np.trace(np.dot(np.dot(Z, L_G), Z.T))

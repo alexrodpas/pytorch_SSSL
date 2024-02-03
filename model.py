@@ -1,78 +1,94 @@
 import numpy as np
+import torch
 from torch import nn
-from functions import objective
-from utils import spectral_timeseries_similarity, distance_timeseries_shapelet, shapelet_similarity, EM, s_initialization, z_regularization
-from updates import update_S, update_W, update_Z
+from utils import spectral_timeseries_similarity, distance_timeseries_shapelet, shapelet_similarity, s_initialization, z_regularization
 
 # Semi-Supervised Shapelet Learning model
 class SSSL(nn.Module):
     # Initializes the model
-    def __init__(self, labeled_TS, unlabeled_TS, labeled_Y, parameters):
+    def __init__(self, parameters):
         super(SSSL, self).__init__()
         
         self.params = parameters            # model training parameters
-        self.labeled_TS = labeled_TS        # labeled time series
-        self.unlabeled_TS = unlabeled_TS    # unlabeled time series
-        self.labeled_Y = labeled_Y.T        # labels
-        self.S = s_initialization(unlabeled_TS, self.params)  # shapelets
-        unlabeled_X, _ = distance_timeseries_shapelet(unlabeled_TS, self.S, self.params['alpha'])
-        centroid, self.Z = EM(unlabeled_X, self.params['C'])   # pseudo labels
-        self.W = self.params['w'] * np.vstack((-centroid[0,:], centroid[1:,:])) # W
+        self.lengths, S = s_initialization(self.params)     # shapelets
+        self.S = nn.Parameter(torch.from_numpy(S))  # S
+        self.W = nn.Linear(parameters['R'], parameters['C'], bias=False)
+        nn.init.xavier_uniform_(self.W.weight)
     
     # Does a forward pass of the model on TS
     def forward(self, TS):
         # Forward pass on data
-        X, Xkj_skl = distance_timeseries_shapelet(TS, self.S, self.params['alpha'])
-        SS, _, SSij_sil = shapelet_similarity(self.S, self.params['alpha'], self.params['sigma'])
+        X = distance_timeseries_shapelet(TS, self.lengths, self.S, self.params['alpha'])
+        Z = self.W(X)               # calculates label values
         
         # Returns the calculated X, SS and derivatives
-        return X, Xkj_skl, SS, SSij_sil
+        return X, Z
     
     # Trains the model
-    def train(self, num_epochs, logger=False):
+    def train(self, num_epochs, labeled_dataloader, unlabeled_dataloader, logger=False):
+        loss_fn = nn.NLLLoss()
+        optimizer = torch.optim.SGD(self.parameters(), lr=self.params['eta'])
+        
+        labeled_batches = len(labeled_dataloader)
+        unlabeled_batches = len(unlabeled_dataloader)
+        max_batches = max(labeled_batches, unlabeled_batches)
+        
         # Trains the model num-epochs times
         for i in range(num_epochs):
+            batch = 0
+            labeled_iter = iter(labeled_dataloader)
+            unlabeled_iter = iter(unlabeled_dataloader)
+            total_loss = 0
             
-            print(f"S: \n{self.S}")
-            print(f"W: \n{self.W}")
-            print(f"Z: \n{self.Z}")
-            
-            # Forward pass of the model, calculates trace value
-            labeled_X, lXij_skp, l_H, l_Hij_skp = self(self.labeled_TS)
-            unlabeled_X, unXij_skp, un_H, un_Hij_skp = self(self.unlabeled_TS)
-            L_G, G = spectral_timeseries_similarity(unlabeled_X, self.params['sigma'])
-            F = objective(labeled_X, unlabeled_X, self.Z, self.labeled_Y, L_G, un_H, self.W, self.params)
-            if np.isnan(F):             # failsafe
-                break
+            # Loops through batches of labeled and unlabeled data
+            while (batch < max_batches):
+                batch += 1
+                loss = 0
+                
+                # Labeled loss
+                if (batch <= labeled_batches):
+                    labeled_TS, y = next(labeled_iter)
+                    _, labeled_Z = self(labeled_TS)
+                    loss += loss_fn(labeled_Z, y)
+                    
+                # Unlabeled loss
+                if (batch <= unlabeled_batches):
+                    unlabeled_TS = next(unlabeled_iter)
+                    unlabeled_X, unlabeled_Z = self(unlabeled_TS)
+                    unlabeled_y = torch.argmax(unlabeled_Z, dim=1)  # pseudo-labels
+                    loss += (batch - 1)/(max_batches - 1) * loss_fn(unlabeled_Z, unlabeled_y)
+                    
+                    # Timeseries similarity penalty
+                    unlabeled_Z = nn.functional.one_hot(unlabeled_y).to(torch.float)
+                    L_G = spectral_timeseries_similarity(unlabeled_X, self.params['sigma'])
+                    loss += torch.trace(torch.matmul(torch.matmul(unlabeled_Z.T, L_G), unlabeled_Z))
+                    
+                # Regularization and similarity penalties
+                SS = shapelet_similarity(self.lengths, self.S, self.params['alpha'], self.params['sigma'])
+                loss += self.params['lambda_1'] * torch.linalg.norm(SS)**2
+                loss += self.params['lambda_2'] * torch.linalg.norm(self.W.weight)**2
+                    
+                # Backward pass through the model, updates parameters
+                total_loss += loss.item()
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
             if logger:
                 print("---------------------------------")      # logging
-                print(f"Epoch {i + 1}: Objective value = {F}")  # logging
+                print(f"Epoch {i + 1}: Loss = {total_loss}")    # logging
 
-            # Backward pass of the model, updates parameters
-            self.S = update_S(self.Z, self.labeled_Y, unlabeled_X, labeled_X, self.W, G, self.S, unXij_skp, lXij_skp, un_Hij_skp, un_H, self.params)
-            self.S[:, 1:] = z_regularization(self.S[:, 1:]) # applies regularization
-            self.W = z_regularization(update_W(labeled_X, unlabeled_X, self.Z, self.labeled_Y, self.params))
-            self.Z = update_Z(self.W, unlabeled_X, L_G, self.params)
-            
-            # Stops training if the objective value is low
-            if F < 100:
-                break
-        
         if logger:
-            print("---------------------------------")      # logging
+            print("---------------------------------")          # logging
 
     # Tests the model's output on TS against Y
-    def test(self, TS, Y):
-        TS[:, 1:] = z_regularization(TS[:, 1:])
-        X, _, _, _ = self(TS)           # forward pass
-        Z = np.matmul(self.W.T, X).T    # calculates label values
-        mZ, _ = Z.shape                 # for looping through Z
-
-        # Calculates the model accuracy
-        correct = 0                     # number of correct predictions
-        for i in range(mZ):
-            if Y[i, np.argmax(Z, axis=1)[i]] == 1: # matches predictions to ground truth
-                correct += 1            # prediction was correct
+    def test(self, dataloader):
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for batch, (X, y) in enumerate(dataloader):
+                total += len(y)
+                pred = torch.argmax(self(X)[1], dim=1)
+                correct += torch.sum(torch.where(pred == y, 1, 0))
         
-        print(f"Model accuracy: {correct/mZ*100}%")     # logging
+        print(f"Model accuracy: {correct/total*100}%")          # logging
