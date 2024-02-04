@@ -5,13 +5,13 @@ def main():
     # Model and training parameters
     parameters = {
         'Lmin': 5,                              # the minimum length of shapelets we plan to learn
-        'k': 1,                                 # the number of shapelets in equal length
+        'k': 2,                                 # the number of shapelets in equal length
         'R': 3,                                 # the number of scales of shapelets length
         'C': 2,                                 # the number of classes/clusters
         'alpha': -1e2,                          # parameter in Soft Minimum Function
         'sigma': 1e0,                           # parameter in RBF kernel
-        'lambda_1': 1e0,                        # regularization parameter for shapelet similarity
-        'lambda_2': 1e0,                        # regularization parameter for classification boundary
+        'lambda_1': 5e-1,                       # regularization parameter for shapelet similarity
+        'lambda_2': 5e-1,                       # regularization parameter for classification boundary
         'lambda_3': 1e0,                        # regularization parameter for least square minimization with respect to unlabeled time series
         'lambda_4': 1e0,                        # regularization parameter for least square minimization with respect to labeled time series
         'Imax': 50,                             # the number of internal iterations

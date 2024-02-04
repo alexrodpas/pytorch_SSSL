@@ -193,7 +193,7 @@ def obtain_segments(T, length):
 
 # Initialize shapelets
 def s_initialization(parameters):
-    S = np.zeros((parameters['k'] * parameters['R'], 1 + parameters['R'] * parameters['Lmin'])) # shapelets
+    S = np.zeros((parameters['k'] * parameters['R'], parameters['R'] * parameters['Lmin'])) # shapelets
     L = np.zeros(parameters['k'] * parameters['R']).astype(int)
 
     # Creates k shapelets for each of R lengths and saves them to S

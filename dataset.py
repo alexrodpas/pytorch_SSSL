@@ -1,14 +1,13 @@
 import pandas as pd
-import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
-from utils import reshape_y_true, z_regularization
+from utils import z_regularization
 
 # Helper class for creating labeled time series dataset
 class LabeledTimeseriesDataset(Dataset):
     # Initializes the dataset for labeled time series
     def __init__(self, data, transform=None, target_transform=None):
-        self.timeseries = torch.tensor(data.iloc[:, 1:].values)     # time series data
+        self.timeseries = torch.tensor(z_regularization(data.iloc[:, 1:].values))   # time series data
         self.labels = torch.tensor(data.iloc[:, 0].values)          # labels
         self.transform = transform                                  # time series transform
         self.target_transform = target_transform                    # label transform
@@ -35,7 +34,7 @@ class LabeledTimeseriesDataset(Dataset):
 class UnlabeledTimeseriesDataset(Dataset):
     # Initializes the dataset for unlabeled time series
     def __init__(self, data, transform=None):
-        self.timeseries = torch.tensor(data.values)     # time series data
+        self.timeseries = torch.tensor(z_regularization(data.values))   # time series data
         self.transform = transform                      # time series transform
 
     # Returns the length of the dataset

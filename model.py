@@ -1,7 +1,6 @@
-import numpy as np
 import torch
 from torch import nn
-from utils import spectral_timeseries_similarity, distance_timeseries_shapelet, shapelet_similarity, s_initialization, z_regularization
+from utils import spectral_timeseries_similarity, distance_timeseries_shapelet, shapelet_similarity, s_initialization
 
 # Semi-Supervised Shapelet Learning model
 class SSSL(nn.Module):
@@ -12,7 +11,7 @@ class SSSL(nn.Module):
         self.params = parameters            # model training parameters
         self.lengths, S = s_initialization(self.params)     # shapelets
         self.S = nn.Parameter(torch.from_numpy(S))  # S
-        self.W = nn.Linear(parameters['R'], parameters['C'], bias=False)
+        self.W = nn.Linear(parameters['k'] * parameters['R'], parameters['C'], bias=False)
         nn.init.xavier_uniform_(self.W.weight)
     
     # Does a forward pass of the model on TS
@@ -34,7 +33,7 @@ class SSSL(nn.Module):
         max_batches = max(labeled_batches, unlabeled_batches)
         
         # Trains the model num-epochs times
-        for i in range(num_epochs):
+        for epoch in range(num_epochs):
             batch = 0
             labeled_iter = iter(labeled_dataloader)
             unlabeled_iter = iter(unlabeled_dataloader)
@@ -49,14 +48,14 @@ class SSSL(nn.Module):
                 if (batch <= labeled_batches):
                     labeled_TS, y = next(labeled_iter)
                     _, labeled_Z = self(labeled_TS)
-                    loss += loss_fn(labeled_Z, y)
+                    loss += self.params['lambda_4'] * loss_fn(labeled_Z, y)
                     
                 # Unlabeled loss
                 if (batch <= unlabeled_batches):
                     unlabeled_TS = next(unlabeled_iter)
                     unlabeled_X, unlabeled_Z = self(unlabeled_TS)
                     unlabeled_y = torch.argmax(unlabeled_Z, dim=1)  # pseudo-labels
-                    loss += (batch - 1)/(max_batches - 1) * loss_fn(unlabeled_Z, unlabeled_y)
+                    loss += self.params['lambda_3'] * (batch - 1)/(max_batches - 1) * loss_fn(unlabeled_Z, unlabeled_y)
                     
                     # Timeseries similarity penalty
                     unlabeled_Z = nn.functional.one_hot(unlabeled_y).to(torch.float)
@@ -73,13 +72,24 @@ class SSSL(nn.Module):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+                
+                # Normalizes parameters
+                with torch.no_grad():
+                    self.S -= self.S.min(dim=1, keepdims=True)[0]
+                    self.S /= self.S.max(dim=1, keepdims=True)[0]
+                    for i in range(len(self.lengths)):
+                        self.S[i, self.lengths[i]:] = 0.0
+                        
+                    self.W.weight -= self.W.weight.min()
+                    self.W.weight /= self.W.weight.max()
 
             if logger:
                 print("---------------------------------")      # logging
-                print(f"Epoch {i + 1}: Loss = {total_loss}")    # logging
+                print(f"Epoch {epoch + 1}: Loss = {total_loss}")# logging
 
         if logger:
             print("---------------------------------")          # logging
+            # print(f"Shapelets:\n{self.S}")                    # logging
 
     # Tests the model's output on TS against Y
     def test(self, dataloader):
@@ -90,5 +100,6 @@ class SSSL(nn.Module):
                 total += len(y)
                 pred = torch.argmax(self(X)[1], dim=1)
                 correct += torch.sum(torch.where(pred == y, 1, 0))
+                # print(pred)
         
         print(f"Model accuracy: {correct/total*100}%")          # logging
