@@ -13,12 +13,13 @@ class SSSL(nn.Module):
         self.S = nn.Parameter(torch.from_numpy(S))  # S
         self.W = nn.Linear(parameters['k'] * parameters['R'], parameters['C'], bias=False)
         nn.init.xavier_uniform_(self.W.weight)
+        self.softmax = nn.Softmax(dim=1)
     
     # Does a forward pass of the model on TS
     def forward(self, TS):
         # Forward pass on data
         X = distance_timeseries_shapelet(TS, self.lengths, self.S, self.params['alpha'])
-        Z = self.W(X)               # calculates label values
+        Z = self.softmax(self.W(X))         # calculates label values
         
         # Returns the calculated X, SS and derivatives
         return X, Z
