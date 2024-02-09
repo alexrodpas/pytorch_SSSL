@@ -197,9 +197,10 @@ def s_initialization(parameters):
     L = np.zeros(parameters['k'] * parameters['R']).astype(int)
 
     # Creates k shapelets for each of R lengths and saves them to S
-    for j in range(parameters['R']):
-        length = (j + 1) * parameters['Lmin']       # shapelet length
-        L[j * parameters['k']:(j + 1) * parameters['k']] = length   # records shapelet length
+    for i in range(parameters['R']):
+        length = (i + 1) * parameters['Lmin']       # shapelet length
+        L[i * parameters['k']:(i + 1) * parameters['k']] = length   # records shapelet length
+        S[i * parameters['k']:(i + 1) * parameters['k'], :length] = torch.rand(parameters['k'], length)
     
     # Returns the saved shapelets with their lengths
     return L, S

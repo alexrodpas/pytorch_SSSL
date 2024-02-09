@@ -5,15 +5,17 @@ def main():
     # Model and training parameters
     parameters = {
         'Lmin': 5,                              # the minimum length of shapelets we plan to learn
-        'k': 2,                                 # the number of shapelets in equal length
+        'k': 1,                                 # the number of shapelets in equal length
         'R': 3,                                 # the number of scales of shapelets length
         'C': 2,                                 # the number of classes/clusters
         'alpha': -1e2,                          # parameter in Soft Minimum Function
         'sigma': 1e0,                           # parameter in RBF kernel
-        'lambda_1': 5e-1,                       # regularization parameter for shapelet similarity
-        'lambda_2': 5e-1,                       # regularization parameter for classification boundary
+        'lambda_1': 1e0,                        # regularization parameter for shapelet similarity
+        'lambda_2': 1e0,                        # regularization parameter for classification boundary
         'lambda_3': 1e0,                        # regularization parameter for least square minimization with respect to unlabeled time series
         'lambda_4': 1e0,                        # regularization parameter for least square minimization with respect to labeled time series
+        'lambda_5': 1e0,                        # regularization parameter for shapelet normalization
+        'lambda_6': 1e0,                        # regularization parameter for weight normalization
         'Imax': 50,                             # the number of internal iterations
         'eta': 1e-2,                            # learning rate
         'epsilon': 1e-1,                        # internal convergence parameter
@@ -21,7 +23,7 @@ def main():
         'zeta_1': 1e1,                          # additional orthogonality constant
         'zeta_2': 1e1}                          # additional orthogonality constant
     labeled_ratio = 0.1                         # percents of labeled data
-    batch_size = 16                             # batch size of loaded data
+    batch_size = 32                             # batch size of loaded data
     num_epochs = 20                             # number of epochs to train the model
     
     train_data_file = 'datasets/ItalyPowerDemand_TRAIN.csv'

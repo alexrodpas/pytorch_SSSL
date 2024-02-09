@@ -67,23 +67,27 @@ class SSSL(nn.Module):
                 SS = shapelet_similarity(self.lengths, self.S, self.params['alpha'], self.params['sigma'])
                 loss += self.params['lambda_1'] * torch.linalg.norm(SS)**2
                 loss += self.params['lambda_2'] * torch.linalg.norm(self.W.weight)**2
+                
+                # Normalization penalties
+                norm_S = torch.zeros(self.S.shape)
+                for i in range(len(self.lengths)):
+                    min_S = self.S[i, :self.lengths[i]].min()
+                    max_S = self.S[i, :self.lengths[i]].max()
+                    norm_S[i, :self.lengths[i]] = (self.S[i, :self.lengths[i]] - min_S)/(max_S - min_S)
+                
+                loss += self.params['lambda_5'] * torch.linalg.norm(self.S - norm_S)**2
+                
+                min_W = self.W.weight.min()
+                max_W = self.W.weight.max()
+                norm_W = (self.W.weight - min_W)/max_W
+                loss += self.params['lambda_6'] * torch.linalg.norm(self.W.weight - norm_W)**2
                     
                 # Backward pass through the model, updates parameters
                 total_loss += loss.item()
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                
-                # Normalizes parameters
-                with torch.no_grad():
-                    self.S -= self.S.min(dim=1, keepdims=True)[0]
-                    self.S /= self.S.max(dim=1, keepdims=True)[0]
-                    for i in range(len(self.lengths)):
-                        self.S[i, self.lengths[i]:] = 0.0
-                        
-                    self.W.weight -= self.W.weight.min()
-                    self.W.weight /= self.W.weight.max()
-
+            
             if logger:
                 print("---------------------------------")      # logging
                 print(f"Epoch {epoch + 1}: Loss = {total_loss}")# logging
@@ -91,6 +95,7 @@ class SSSL(nn.Module):
         if logger:
             print("---------------------------------")          # logging
             # print(f"Shapelets:\n{self.S}")                    # logging
+            # print(f"Weights:\n{self.W}")                      # logging
 
     # Tests the model's output on TS against Y
     def test(self, dataloader):
