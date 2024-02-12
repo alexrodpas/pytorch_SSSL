@@ -23,7 +23,7 @@ def main():
         'zeta_1': 1e1,                          # additional orthogonality constant
         'zeta_2': 1e1}                          # additional orthogonality constant
     labeled_ratio = 0.1                         # percents of labeled data
-    batch_size = 32                             # batch size of loaded data
+    batch_size = 16                             # batch size of loaded data
     num_epochs = 20                             # number of epochs to train the model
     
     train_data_file = 'datasets/ItalyPowerDemand_TRAIN.csv'
@@ -32,6 +32,7 @@ def main():
     # Loads data for training
     print("Loading training dataset...")        # logging
     labeled_dataloader, unlabeled_dataloader = load_dataset(train_data_file, labeled_ratio, batch_size)    # loads data
+    test_dataloader, _ = load_dataset(test_data_file, 1.0, batch_size)    # loads data
     print("Training dataset loaded")            # logging
     print("---------------------------------")  # logging
 
@@ -43,7 +44,7 @@ def main():
 
     # Trains Semi-Supervised Shapelets Learning model
     print("Training model...")                  # logging
-    SSSL_model.train(num_epochs, labeled_dataloader, unlabeled_dataloader, logger=True)   # trains model
+    SSSL_model.train(num_epochs, labeled_dataloader, unlabeled_dataloader, val_dataloader=test_dataloader, logger=True)   # trains model
     print("Model trained")                      # logging
     print("---------------------------------")  # logging
 

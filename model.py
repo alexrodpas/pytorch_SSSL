@@ -13,19 +13,18 @@ class SSSL(nn.Module):
         self.S = nn.Parameter(torch.from_numpy(S))  # S
         self.W = nn.Linear(parameters['k'] * parameters['R'], parameters['C'], bias=False)
         nn.init.xavier_uniform_(self.W.weight)
-        self.softmax = nn.Softmax(dim=1)
     
     # Does a forward pass of the model on TS
     def forward(self, TS):
         # Forward pass on data
         X = distance_timeseries_shapelet(TS, self.lengths, self.S, self.params['alpha'])
-        Z = self.softmax(self.W(X))         # calculates label values
+        Z = self.W(X)                       # calculates label values
         
         # Returns the calculated X, SS and derivatives
         return X, Z
     
     # Trains the model
-    def train(self, num_epochs, labeled_dataloader, unlabeled_dataloader, logger=False):
+    def train(self, num_epochs, labeled_dataloader, unlabeled_dataloader, val_dataloader=None, logger=False):
         loss_fn = nn.NLLLoss()
         optimizer = torch.optim.SGD(self.parameters(), lr=self.params['eta'])
         
@@ -48,25 +47,30 @@ class SSSL(nn.Module):
                 # Labeled loss
                 if (batch <= labeled_batches):
                     labeled_TS, y = next(labeled_iter)
+                    labeled_y = nn.functional.one_hot(y, num_classes=self.params['C'])
                     _, labeled_Z = self(labeled_TS)
-                    loss += self.params['lambda_4'] * loss_fn(labeled_Z, y)
+                    loss += 0.5 * self.params['lambda_4'] * torch.norm(labeled_Z - labeled_y)
                     
                 # Unlabeled loss
                 if (batch <= unlabeled_batches):
                     unlabeled_TS = next(unlabeled_iter)
-                    unlabeled_X, unlabeled_Z = self(unlabeled_TS)
-                    unlabeled_y = torch.argmax(unlabeled_Z, dim=1)  # pseudo-labels
-                    loss += self.params['lambda_3'] * (batch - 1)/(max_batches - 1) * loss_fn(unlabeled_Z, unlabeled_y)
+                    unlabeled_X, unlabeled_pred = self(unlabeled_TS)
+                    unlabeled_Z = torch.argmax(unlabeled_pred, dim=1)
+                    unlabeled_y = nn.functional.one_hot(unlabeled_Z, num_classes=self.params['C']).to(torch.float)   # pseudo-labels
+                    Z = torch.matmul(unlabeled_y.T, torch.nan_to_num(torch.pow(torch.matmul(unlabeled_y, unlabeled_y.T), -0.5), posinf=0.0))
+                    loss += 0.5 * self.params['lambda_3'] * (batch - 1)/(max_batches - 1) * torch.norm(unlabeled_pred - Z.T)
                     
                     # Timeseries similarity penalty
-                    unlabeled_Z = nn.functional.one_hot(unlabeled_y).to(torch.float)
+                    
+                    # print(f"Pred:\n{unlabeled_Z}\nZ:\n{Z}")
                     L_G = spectral_timeseries_similarity(unlabeled_X, self.params['sigma'])
-                    loss += torch.trace(torch.matmul(torch.matmul(unlabeled_Z.T, L_G), unlabeled_Z))
+                    print(f"Classification boundary loss: {0.5 * torch.trace(torch.matmul(torch.matmul(Z, L_G), Z.T))}")
+                    loss += 0.5 * torch.trace(torch.matmul(torch.matmul(Z, L_G), Z.T))
                     
                 # Regularization and similarity penalties
                 SS = shapelet_similarity(self.lengths, self.S, self.params['alpha'], self.params['sigma'])
-                loss += self.params['lambda_1'] * torch.linalg.norm(SS)**2
-                loss += self.params['lambda_2'] * torch.linalg.norm(self.W.weight)**2
+                loss += 0.5 * self.params['lambda_1'] * torch.linalg.norm(SS)**2
+                loss += 0.5 * self.params['lambda_2'] * torch.linalg.norm(self.W.weight)**2
                 
                 # Normalization penalties
                 norm_S = torch.zeros(self.S.shape)
@@ -91,11 +95,14 @@ class SSSL(nn.Module):
             if logger:
                 print("---------------------------------")      # logging
                 print(f"Epoch {epoch + 1}: Loss = {total_loss}")# logging
+                
+            if val_dataloader is not None:
+                self.test(val_dataloader)
 
         if logger:
             print("---------------------------------")          # logging
-            # print(f"Shapelets:\n{self.S}")                    # logging
-            # print(f"Weights:\n{self.W}")                      # logging
+            print(f"Shapelets:\n{self.S}")                    # logging
+            print(f"Weights:\n{self.W.weight}")               # logging
 
     # Tests the model's output on TS against Y
     def test(self, dataloader):
