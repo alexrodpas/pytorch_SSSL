@@ -9,9 +9,10 @@ def spectral_timeseries_similarity(X, sigma):
     
     # Loops through X to calculate norm, similarity matrices
     for i in range(n):
-        for j in range(i, n):
+        for j in range(i+1, n):
             g = torch.linalg.norm(X[i] - X[j])          # 2-norm between timeseries
-            G[i, j] = torch.exp(-g**2 / sigma**2)       # Calculates G entry
+            # print(f"Diff: {X[i] - X[j]}")
+            G[i, j] = torch.exp(-g**2/sigma**2)         # Calculates G entry
             G[j, i] = G[i, j]                           # Ensures symmetry
         
         D_G[i, i] = torch.sum(G[i])             # Calculates diagonal value
@@ -222,3 +223,14 @@ def reshape_y_true(Y_true, C):
 def z_regularization(Data):
     # Returns regularized data
     return (Data - np.min(Data)) / (np.max(Data) - np.min(Data))
+
+# Calculates Z = Y_u * (Y_u^T * Y_u)^(-1/2). Y is given in its transpose
+def calculate_Z(unlabeled_y):
+    Z = torch.matmul(unlabeled_y, unlabeled_y.T)
+    U, S, Vh = torch.linalg.svd(Z)          # singular value decomposition
+    # Uses the singular value decomposition to calculate (Y_u^T * Y_u)^(-1/2)
+    Z = torch.matmul(Vh.T, torch.matmul(torch.diag(S**(0.5)), U.T))
+    
+    # Returns Y_u * (Y_u^T * Y_u)^(-1/2)
+    return torch.matmul(unlabeled_y.T, Z)
+    

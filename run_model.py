@@ -23,7 +23,7 @@ def main():
         'zeta_1': 1e1,                          # additional orthogonality constant
         'zeta_2': 1e1}                          # additional orthogonality constant
     labeled_ratio = 0.1                         # percents of labeled data
-    batch_size = 16                             # batch size of loaded data
+    batch_size = 32                             # batch size of loaded data
     num_epochs = 20                             # number of epochs to train the model
     
     train_data_file = 'datasets/ItalyPowerDemand_TRAIN.csv'

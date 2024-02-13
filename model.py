@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from utils import spectral_timeseries_similarity, distance_timeseries_shapelet, shapelet_similarity, s_initialization
+from utils import spectral_timeseries_similarity, distance_timeseries_shapelet, shapelet_similarity, s_initialization, calculate_Z
 
 # Semi-Supervised Shapelet Learning model
 class SSSL(nn.Module):
@@ -49,7 +49,7 @@ class SSSL(nn.Module):
                     labeled_TS, y = next(labeled_iter)
                     labeled_y = nn.functional.one_hot(y, num_classes=self.params['C'])
                     _, labeled_Z = self(labeled_TS)
-                    loss += 0.5 * self.params['lambda_4'] * torch.norm(labeled_Z - labeled_y)
+                    loss += 0.5 * self.params['lambda_4'] * torch.sum(torch.pow(labeled_Z - labeled_y, 2))
                     
                 # Unlabeled loss
                 if (batch <= unlabeled_batches):
@@ -57,15 +57,16 @@ class SSSL(nn.Module):
                     unlabeled_X, unlabeled_pred = self(unlabeled_TS)
                     unlabeled_Z = torch.argmax(unlabeled_pred, dim=1)
                     unlabeled_y = nn.functional.one_hot(unlabeled_Z, num_classes=self.params['C']).to(torch.float)   # pseudo-labels
-                    Z = torch.matmul(unlabeled_y.T, torch.nan_to_num(torch.pow(torch.matmul(unlabeled_y, unlabeled_y.T), -0.5), posinf=0.0))
-                    loss += 0.5 * self.params['lambda_3'] * (batch - 1)/(max_batches - 1) * torch.norm(unlabeled_pred - Z.T)
+                    Z = calculate_Z(unlabeled_y)
+                    loss += 0.5 * self.params['lambda_3'] * (batch - 1)/(max_batches - 1) * torch.sum(torch.pow(unlabeled_pred - Z.T, 2))
                     
                     # Timeseries similarity penalty
-                    
                     # print(f"Pred:\n{unlabeled_Z}\nZ:\n{Z}")
                     L_G = spectral_timeseries_similarity(unlabeled_X, self.params['sigma'])
-                    print(f"Classification boundary loss: {0.5 * torch.trace(torch.matmul(torch.matmul(Z, L_G), Z.T))}")
-                    loss += 0.5 * torch.trace(torch.matmul(torch.matmul(Z, L_G), Z.T))
+                    penalty = 0.5 * torch.trace(torch.matmul(torch.matmul(Z, L_G), Z.T))
+                    print(f"Classification boundary loss: {penalty}")
+                    if not torch.isnan(penalty):
+                        loss += penalty
                     
                 # Regularization and similarity penalties
                 SS = shapelet_similarity(self.lengths, self.S, self.params['alpha'], self.params['sigma'])
